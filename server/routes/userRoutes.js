@@ -1,100 +1,375 @@
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
+const Address = require('../models/Address');
 const jwt = require('jsonwebtoken');
+const { OAuth2Client } = require('google-auth-library');
+const { protect, admin } = require('../middleware/authMiddleware');
 
 const generateToken = (id) => {
-    return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
-        expiresIn: '30d',
-    });
+  return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
+    expiresIn: process.env.JWT_EXPIRE || '30d',
+  });
 };
+
+const googleClient = process.env.GOOGLE_CLIENT_ID
+  ? new OAuth2Client(process.env.GOOGLE_CLIENT_ID)
+  : null;
+
+// @desc    Authenticate with Google & get token
+// @route   POST /api/users/google
+// @access  Public
+router.post('/google', async (req, res, next) => {
+  try {
+    if (!googleClient) {
+      return res.status(503).json({ message: 'Google sign-in is not configured on the server' });
+    }
+
+    const { credential } = req.body;
+    if (!credential) {
+      return res.status(400).json({ message: 'Google credential is required' });
+    }
+
+    // Verify the Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(401).json({ message: 'Invalid Google credential' });
+    }
+
+    const { sub: googleId, email, name, picture } = payload;
+
+    // Find existing user by googleId or email, otherwise create one
+    let user = await User.findOne({ email: email.toLowerCase() });
+
+    if (user) {
+      // Link Google account to existing local account if not already linked
+      if (!user.googleId) {
+        user.googleId = googleId;
+        if (user.authProvider === 'local') {
+          // Keep local auth but allow google login too
+        }
+      }
+      if (picture && !user.avatar) user.avatar = picture;
+      user.lastLogin = new Date();
+      await user.save({ validateBeforeSave: false });
+    } else {
+      user = await User.create({
+        name: name || email.split('@')[0],
+        email,
+        authProvider: 'google',
+        googleId,
+        avatar: picture || '',
+        lastLogin: new Date(),
+      });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account has been deactivated' });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      isAdmin: user.isAdmin,
+      role: user.role,
+      avatar: user.avatar,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    console.error('Google auth error:', error.message);
+    return res.status(401).json({ message: 'Google authentication failed' });
+  }
+});
 
 // @desc    Auth user & get token
 // @route   POST /api/users/login
 // @access  Public
-router.post('/login', async (req, res) => {
+router.post('/login', async (req, res, next) => {
+  try {
     const { email, password } = req.body;
 
-    const user = await User.findOne({ email });
-
-    if (user && (await user.matchPassword(password))) {
-        res.json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            token: generateToken(user._id),
-        });
-    } else {
-        res.status(401).json({ message: 'Invalid email or password' });
+    if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ message: 'Please provide a valid email and password' });
     }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: 'Account has been deactivated' });
+    }
+
+    const isMatch = await user.matchPassword(password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save({ validateBeforeSave: false });
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      isAdmin: user.isAdmin,
+      role: user.role,
+      avatar: user.avatar,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
-router.post('/', async (req, res) => {
-    const { name, email, password, addressLine, city, pincode, country } = req.body;
+router.post('/', async (req, res, next) => {
+  try {
+    const { name, email, password, phone, addressLine, city, state, pincode, country } = req.body;
 
-    const userExists = await User.findOne({ email });
+    if (!name || !email || !password || typeof email !== 'string' || typeof password !== 'string' || typeof name !== 'string') {
+      return res.status(400).json({ message: 'Please provide a valid name, email, and password' });
+    }
+
+    if (password.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+
+    const userExists = await User.findOne({ email: email.toLowerCase() });
 
     if (userExists) {
-        res.status(400).json({ message: 'User already exists' });
-        return;
+      return res.status(400).json({ message: 'An account with this email already exists' });
     }
 
     const user = await User.create({
-        name,
-        email,
-        password,
+      name,
+      email,
+      password,
+      phone,
     });
 
-    if (user) {
-        // Create Address table entry
-        const Address = require('../models/Address');
-        if (addressLine && city && pincode && country) {
-            await Address.create({
-                user: user._id,
-                addressLine,
-                city,
-                pincode,
-                country
-            });
-        }
-
-        res.status(201).json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            isAdmin: user.isAdmin,
-            token: generateToken(user._id),
-        });
-    } else {
-        res.status(400).json({ message: 'Invalid user data' });
+    // Create address if provided
+    if (addressLine && city && pincode) {
+      await Address.create({
+        user: user._id,
+        addressLine,
+        city,
+        state,
+        pincode,
+        country: country || 'India',
+        isDefault: true,
+      });
     }
+
+    res.status(201).json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      isAdmin: user.isAdmin,
+      role: user.role,
+      token: generateToken(user._id),
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
-const { protect, admin } = require('../middleware/authMiddleware');
-const Address = require('../models/Address');
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+router.get('/profile', protect, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      isAdmin: user.isAdmin,
+      role: user.role,
+      avatar: user.avatar,
+      createdAt: user.createdAt,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+router.put('/profile', protect, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    user.name = req.body.name || user.name;
+    user.phone = req.body.phone || user.phone;
+    user.avatar = req.body.avatar || user.avatar;
+
+    if (req.body.email && req.body.email !== user.email) {
+      const emailExists = await User.findOne({ email: req.body.email });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
+      user.email = req.body.email;
+    }
+
+    if (req.body.password) {
+      if (req.body.password.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      }
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      name: updatedUser.name,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      isAdmin: updatedUser.isAdmin,
+      role: updatedUser.role,
+      avatar: updatedUser.avatar,
+      token: generateToken(updatedUser._id),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 // @desc    Get all users
 // @route   GET /api/users
 // @access  Private/Admin
-router.get('/', protect, admin, async (req, res) => {
-    const users = await User.find({});
-    res.json(users);
+router.get('/', protect, admin, async (req, res, next) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 50;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments();
+    const users = await User.find({})
+      .select('-password')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    res.json({
+      users,
+      page,
+      pages: Math.ceil(total / limit),
+      total,
+    });
+  } catch (error) {
+    next(error);
+  }
 });
 
-// @desc    Get the logged-in user's address
+// @desc    Get the logged-in user's addresses
 // @route   GET /api/users/address
 // @access  Private
-router.get('/address', protect, async (req, res) => {
-    const address = await Address.findOne({ user: req.user._id });
-    if (address) {
-        res.json(address);
-    } else {
-        res.status(404).json({ message: 'No address found for this user' });
+router.get('/address', protect, async (req, res, next) => {
+  try {
+    const addresses = await Address.find({ user: req.user._id }).sort({ isDefault: -1 });
+
+    if (addresses.length === 0) {
+      // Return empty for backward compatibility
+      return res.status(404).json({ message: 'No address found for this user' });
     }
+
+    // Return first (default) address for backward compatibility
+    res.json(addresses[0]);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Get all addresses for logged-in user
+// @route   GET /api/users/addresses
+// @access  Private
+router.get('/addresses', protect, async (req, res, next) => {
+  try {
+    const addresses = await Address.find({ user: req.user._id }).sort({ isDefault: -1 });
+    res.json(addresses);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Add a new address
+// @route   POST /api/users/address
+// @access  Private
+router.post('/address', protect, async (req, res, next) => {
+  try {
+    const { label, fullName, phone, addressLine, addressLine2, landmark, city, state, pincode, country, isDefault } = req.body;
+
+    if (!addressLine || !city || !pincode) {
+      return res.status(400).json({ message: 'Address line, city, and pincode are required' });
+    }
+
+    const address = await Address.create({
+      user: req.user._id,
+      label,
+      fullName,
+      phone,
+      addressLine,
+      addressLine2,
+      landmark,
+      city,
+      state,
+      pincode,
+      country: country || 'India',
+      isDefault: isDefault || false,
+    });
+
+    res.status(201).json(address);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Delete user (admin)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+router.delete('/:id', protect, admin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Soft delete - deactivate instead of removing
+    user.isActive = false;
+    await user.save({ validateBeforeSave: false });
+
+    res.json({ message: 'User deactivated successfully' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 module.exports = router;

@@ -1,81 +1,149 @@
 import "./products.css";
 import { Link, useParams } from "react-router-dom";
-import { FaArrowLeft } from "react-icons/fa";
-import { categories } from "./data"; // Keep categories static for now or fetch if needed
+import { FaArrowLeft, FaStar } from "react-icons/fa";
+import { categories as fallbackCategories } from "./data";
+import { API_URL } from "../config";
 import { useState, useEffect } from "react";
 
 function ProductCards() {
   const { categoryId } = useParams();
   const [products, setProducts] = useState([]);
+  const [category, setCategory] = useState(
+    fallbackCategories.find((c) => c.id === parseInt(categoryId)) || null
+  );
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/products');
-        const data = await response.json();
-        setProducts(data);
-        setLoading(false);
+        const [prodRes, catRes] = await Promise.all([
+          fetch(`${API_URL}/api/products?limit=200`),
+          fetch(`${API_URL}/api/categories/${categoryId}`),
+        ]);
+        const prodData = await prodRes.json();
+        setProducts(prodData.products || prodData);
+
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          setCategory({ ...catData, id: catData._id });
+        }
       } catch (error) {
-        console.error("Error fetching products:", error);
+        console.error("Error fetching data:", error);
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchProducts();
-  }, []);
+    fetchData();
+  }, [categoryId]);
 
-  // Find category and its products
-  const category = categories.find(c => c.id === parseInt(categoryId));
-  // Filter fetched products by categoryId
-  const categoryProducts = products.filter(p => p.categoryId === parseInt(categoryId));
+  const categoryProducts = products.filter(
+    (p) => p.categoryId === parseInt(categoryId)
+  );
 
-  if (!category) {
-    return <div className="cards-container"><h2>Category not found</h2></div>;
-  }
-
-  if (loading) {
-    return <div className="cards-container"><h2>Loading products...</h2></div>;
+  if (!loading && !category) {
+    return (
+      <div className="products-page">
+        <div className="products-page__empty">
+          <h2>Category not found</h2>
+          <Link to="/categories" className="products-page__back-link">
+            <FaArrowLeft /> Back to Collections
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <div style={{ padding: '20px 20px 0', maxWidth: '1200px', margin: '0 auto' }}>
-        <Link to="/categories" style={{ textDecoration: 'none', color: '#6c757d', display: 'flex', alignItems: 'center', gap: '8px', fontWeight: '500' }}>
-          <FaArrowLeft /> Back to {category.title} Collections
-        </Link>
-      </div>
+    <div className="products-page">
+      {/* Page Header */}
+      <section className="products-page__header">
+        <div className="products-page__header-inner">
+          <Link to="/categories" className="products-page__back-link">
+            <FaArrowLeft />
+            <span>All Collections</span>
+          </Link>
+          <div className="products-page__title-group">
+            <span className="products-page__label">{category?.subtitle}</span>
+            <h1 className="products-page__title">{category?.title || "Loading..."}</h1>
+            <p className="products-page__count">
+              {categoryProducts.length} {categoryProducts.length === 1 ? "product" : "products"}
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <div className="cards-container">
-        {categoryProducts.length > 0 ? (
-          categoryProducts.map((product) => (
-            <Link
-              key={product._id}
-              to={`/category/${categoryId}/product/${product._id}`}
-              className="remove_link"
-            >
-              <div className="product-card">
-                <div className="product-card-image-wrapper">
-                  <img src={product.image} alt={product.title} />
+      {/* Product Grid */}
+      <section className="products-page__grid-section">
+        {loading ? (
+          <div className="products-page__loading">
+            <div className="products-page__skeleton-grid">
+              {[1, 2, 3].map((n) => (
+                <div key={n} className="product-skeleton">
+                  <div className="product-skeleton__image" />
+                  <div className="product-skeleton__body">
+                    <div className="product-skeleton__line product-skeleton__line--short" />
+                    <div className="product-skeleton__line product-skeleton__line--medium" />
+                    <div className="product-skeleton__line product-skeleton__line--long" />
+                  </div>
                 </div>
-                <div className="product-card-content">
-                  <h3>{product.title}</h3>
-                  <div className="price">₹{product.price}</div>
-                  <p>{product.description && product.description.length > 100
-                    ? product.description.substring(0, 100) + '...'
-                    : product.description}</p>
-                  <button className="view-details-btn">View Details</button>
+              ))}
+            </div>
+          </div>
+        ) : categoryProducts.length > 0 ? (
+          <div className="products-grid">
+            {categoryProducts.map((product, index) => (
+              <Link
+                key={product._id}
+                to={`/category/${categoryId}/product/${product._id}`}
+                className="product-card"
+                style={{ animationDelay: `${index * 0.08}s` }}
+              >
+                <div className="product-card__image">
+                  <img src={product.image} alt={product.title} loading="lazy" />
+                  {product.originalPrice && product.originalPrice > product.price && (
+                    <span className="product-card__badge">
+                      {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                    </span>
+                  )}
                 </div>
-              </div>
-            </Link>
-          ))
+                <div className="product-card__body">
+                  <div className="product-card__meta">
+                    <span className="product-card__category">{product.category}</span>
+                    {product.rating > 0 && (
+                      <span className="product-card__rating">
+                        <FaStar /> {product.rating}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="product-card__title">{product.title}</h3>
+                  <p className="product-card__desc">
+                    {product.shortDescription || (product.description && product.description.length > 80
+                      ? product.description.substring(0, 80) + "..."
+                      : product.description)}
+                  </p>
+                  <div className="product-card__footer">
+                    <div className="product-card__price-group">
+                      <span className="product-card__price">₹{product.price?.toLocaleString()}</span>
+                      {product.originalPrice && product.originalPrice > product.price && (
+                        <span className="product-card__original-price">₹{product.originalPrice?.toLocaleString()}</span>
+                      )}
+                    </div>
+                    <span className="product-card__action">View</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
         ) : (
-          <h2>No products found in this category.</h2>
+          <div className="products-page__empty">
+            <h3>No products found</h3>
+            <p>This collection is currently being curated. Check back soon.</p>
+          </div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
-
 
 export default ProductCards;

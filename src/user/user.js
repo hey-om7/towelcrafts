@@ -15,7 +15,6 @@ import OrderCompleted from "./order_completed";
 import { Login } from "./login";
 import { Register } from "./register";
 import { AdminDashboard } from "../admin/AdminDashboard";
-import Feedback from "./Feedback";
 import { FAQ } from "./faq";
 import { Shipping } from "./shipping";
 import { Returns } from "./returns";

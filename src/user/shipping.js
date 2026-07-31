@@ -1,42 +1,58 @@
+import { FaBox, FaTruck, FaStore, FaMapMarkedAlt } from "react-icons/fa";
 import "./aboutus.css";
 
 export function Shipping() {
-    return (
-        <section className="about-section">
-            <div className="about-container">
-                <div className="about-hero">
-                    <h1 className="about-title">Shipping Policy</h1>
-                    <p className="about-subtitle">Everything you need to know about our delivery process.</p>
-                </div>
+  return (
+    <div className="page">
+      <div className="page__hero">
+        <div className="page__hero-inner">
+          <span className="page__label">Delivery</span>
+          <h1 className="page__title">Shipping Policy</h1>
+          <p className="page__subtitle">
+            Everything you need to know about how we get your order to you.
+          </p>
+        </div>
+      </div>
 
-                <div className="about-story" style={{ textAlign: 'left' }}>
-                    <h3 style={{ marginBottom: "10px", color: "#1a1a1a" }}>Processing Time</h3>
-                    <p>
-                        All orders are processed within 1 to 2 business days (excluding weekends and holidays) after
-                        receiving your order confirmation email. You will receive another notification when your order has shipped.
-                    </p>
+      <div className="page__body page__body--narrow">
+        <div className="prose">
+          <div className="prose__block">
+            <h3><FaBox /> Processing Time</h3>
+            <p>
+              All orders are processed within 1 to 2 business days (excluding weekends and
+              holidays) after receiving your order confirmation. You will receive another
+              notification when your order has shipped.
+            </p>
+          </div>
 
-                    <h3 style={{ marginBottom: "10px", marginTop: "30px", color: "#1a1a1a" }}>Shipping Rates and Estimates</h3>
-                    <p>
-                        Shipping charges for your order will be calculated and displayed at checkout. We offer
-                        standard and expedited shipping options across India.
-                    </p>
+          <div className="prose__block">
+            <h3><FaTruck /> Shipping Rates & Estimates</h3>
+            <p>
+              Shipping charges are calculated and displayed at checkout. We offer free shipping
+              on all orders over ₹999. Standard and expedited shipping options are available
+              across India.
+            </p>
+          </div>
 
-                    <h3 style={{ marginBottom: "10px", marginTop: "30px", color: "#1a1a1a" }}>In-Store Pickup</h3>
-                    <p>
-                        You can skip the shipping fees with free local pickup at our main warehouse. After
-                        placing your order and selecting local pickup at checkout, your order will be prepared
-                        and ready for pick up within 1 to 2 business days.
-                    </p>
+          <div className="prose__block">
+            <h3><FaStore /> In-Store Pickup</h3>
+            <p>
+              Skip the shipping fees with free local pickup at our main warehouse. After placing
+              your order and selecting local pickup at checkout, your order will be prepared and
+              ready within 1 to 2 business days.
+            </p>
+          </div>
 
-                    <h3 style={{ marginBottom: "10px", marginTop: "30px", color: "#1a1a1a" }}>Order Tracking</h3>
-                    <p>
-                        When your order has shipped, you will receive an email notification from us which will
-                        include a tracking number you can use to check its status. Please allow 48 hours for the
-                        tracking information to become available.
-                    </p>
-                </div>
-            </div>
-        </section>
-    );
+          <div className="prose__block">
+            <h3><FaMapMarkedAlt /> Order Tracking</h3>
+            <p>
+              When your order has shipped, you will receive an email with a tracking number you
+              can use to check its status. Please allow up to 48 hours for tracking information
+              to become available.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

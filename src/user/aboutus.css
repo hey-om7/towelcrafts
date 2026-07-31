@@ -1,170 +1,235 @@
-.about-section {
-  background-color: #fcfcfc;
-  color: #1a1a1a;
-  padding: 80px 20px;
-  font-family: 'Poppins', sans-serif;
+/* ═══════════════════════════════════════════
+   PREMIUM INFO PAGES (About / FAQ / Shipping / Returns)
+═══════════════════════════════════════════ */
+.page {
   min-height: 100vh;
+  background: var(--color-bg-light);
 }
 
-.about-container {
-  max-width: 1000px;
-  margin: 0 auto;
-}
-
-/* HERO SECTION */
-.about-hero {
+/* Page Hero */
+.page__hero {
+  background: linear-gradient(135deg, var(--color-primary-dark), var(--color-primary-darker));
+  padding: var(--space-20) var(--space-6) var(--space-16);
   text-align: center;
-  margin-bottom: 60px;
-  animation: fadeIn 1s ease-out;
+  position: relative;
+  overflow: hidden;
 }
 
-.about-title {
-  font-size: 3rem;
-  font-weight: 700;
-  letter-spacing: -1px;
-  margin-bottom: 16px;
-  color: #1a1a1a;
+.page__hero::before {
+  content: '';
+  position: absolute;
+  top: -30%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(197, 160, 89, 0.15), transparent 70%);
+  border-radius: 50%;
 }
 
-.about-subtitle {
-  font-size: 1.25rem;
-  color: #666;
-  font-weight: 300;
-  letter-spacing: 0.5px;
+.page__hero-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 720px;
+  margin: 0 auto;
+  animation: fadeInUp 0.6s var(--ease-out) both;
 }
 
-/* STORY SECTION */
+.page__label {
+  display: inline-block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--color-accent-light);
+  margin-bottom: var(--space-4);
+}
+
+.page__title {
+  font-size: clamp(2rem, 5vw, var(--text-5xl));
+  color: var(--color-white);
+  line-height: var(--leading-tight);
+  margin-bottom: var(--space-4);
+}
+
+.page__title em {
+  font-weight: 400;
+  color: var(--color-accent-light);
+}
+
+.page__subtitle {
+  font-size: var(--text-lg);
+  color: rgba(255, 255, 255, 0.75);
+  line-height: var(--leading-relaxed);
+  margin: 0;
+}
+
+/* Page Body */
+.page__body {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: var(--space-16) var(--space-6) var(--space-20);
+}
+
+.page__body--narrow {
+  max-width: 760px;
+}
+
+/* Story / Prose */
 .about-story {
   text-align: center;
-  max-width: 800px;
-  margin: 0 auto 80px;
-  animation: slideUp 1s ease-out 0.2s backwards;
+  max-width: 760px;
+  margin: 0 auto var(--space-16);
+  animation: fadeInUp 0.6s var(--ease-out) 0.1s both;
 }
 
 .about-story p {
-  font-size: 1.1rem;
-  line-height: 1.8;
-  color: #444;
-  margin-bottom: 24px;
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-5);
 }
 
 .highlight {
-  color: #cfb53b;
-  /* Gold accent */
+  color: var(--color-accent-dark);
   font-weight: 600;
 }
 
-/* VALUES SECTION */
-.values-section {
-  margin-bottom: 80px;
-  animation: slideUp 1s ease-out 0.4s backwards;
-}
-
+/* Section title */
 .section-title {
   text-align: center;
-  font-size: 2rem;
-  margin-bottom: 50px;
-  color: #1a1a1a;
-  position: relative;
-  display: inline-block;
-  left: 50%;
-  transform: translateX(-50%);
+  font-size: var(--text-3xl);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-12);
 }
 
 .section-title::after {
   content: '';
   display: block;
-  width: 60px;
+  width: 48px;
   height: 3px;
-  background-color: #cfb53b;
-  margin: 15px auto 0;
+  background: var(--color-accent);
+  margin: var(--space-4) auto 0;
+  border-radius: var(--radius-full);
 }
 
+/* Value cards grid */
 .about-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 40px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--space-6);
 }
 
 .about-card {
-  background: white;
-  padding: 40px 30px;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  border-top: 4px solid transparent;
+  background: var(--color-white);
+  padding: var(--space-8);
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border-light);
+  transition: all var(--transition-base);
 }
 
 .about-card:hover {
-  transform: translateY(-8px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-  border-top-color: #cfb53b;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-lg);
+  border-color: transparent;
+}
+
+.about-card__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(93, 112, 82, 0.1), rgba(93, 112, 82, 0.05));
+  border-radius: var(--radius-lg);
+  color: var(--color-primary);
+  font-size: var(--text-lg);
+  margin-bottom: var(--space-5);
 }
 
 .about-card h3 {
-  font-size: 1.25rem;
-  margin-bottom: 16px;
-  color: #1a1a1a;
-  font-weight: 600;
+  font-size: var(--text-lg);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-3);
 }
 
 .about-card p {
-  font-size: 0.95rem;
-  line-height: 1.6;
-  color: #666;
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-light);
+  margin: 0;
 }
 
-/* FOOTER QUOTE */
+/* Values section wrapper */
+.values-section {
+  margin-bottom: var(--space-16);
+  animation: fadeInUp 0.6s var(--ease-out) 0.2s both;
+}
+
+/* Footer quote */
 .about-footer {
   text-align: center;
-  border-top: 1px solid #eee;
-  padding-top: 40px;
-  animation: fadeIn 1s ease-out 0.6s backwards;
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-10);
 }
 
 .about-footer p {
-  font-size: 1.2rem;
+  font-family: var(--font-heading);
+  font-size: var(--text-xl);
   font-style: italic;
-  color: #555;
-  font-weight: 300;
+  color: var(--color-text-secondary);
 }
 
 .about-footer span {
-  color: #cfb53b;
+  color: var(--color-accent-dark);
   font-weight: 600;
   font-style: normal;
 }
 
-/* ANIMATIONS */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
+/* Prose blocks (Shipping / Returns) */
+.prose {
+  animation: fadeInUp 0.6s var(--ease-out) 0.1s both;
 }
 
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.prose__block {
+  background: var(--color-white);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-8);
+  margin-bottom: var(--space-4);
 }
 
-/* RESPONSIVE */
+.prose__block h3 {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-size: var(--text-lg);
+  color: var(--color-primary-dark);
+  margin-bottom: var(--space-3);
+}
+
+.prose__block h3 svg {
+  color: var(--color-accent);
+  font-size: var(--text-base);
+}
+
+.prose__block p {
+  font-size: var(--text-base);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-light);
+  margin: 0;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .about-title {
-    font-size: 2.5rem;
+  .page__hero {
+    padding: var(--space-12) var(--space-4) var(--space-10);
   }
 
-  .about-section {
-    padding: 60px 20px;
+  .page__body {
+    padding: var(--space-10) var(--space-4) var(--space-16);
+  }
+
+  .about-story p {
+    font-size: var(--text-base);
   }
 }
