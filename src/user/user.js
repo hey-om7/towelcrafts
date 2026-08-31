@@ -19,6 +19,7 @@ import { FAQ } from "./faq";
 import { Shipping } from "./shipping";
 import { Returns } from "./returns";
 import Checkout from "./checkout";
+import { Account } from "./account";
 
 export function User() {
   return (
@@ -39,6 +40,7 @@ export function User() {
         <Route path="/cart" element={<Cart />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-completed" element={<OrderCompleted />} />
+        <Route path="/account" element={<Account />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/admin" element={<AdminDashboard />} />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaUser, FaBars, FaTimes, FaChevronDown } from "react-icons/fa";
+import { FaUser, FaBars, FaTimes, FaChevronDown, FaUserCircle, FaBoxOpen, FaMapMarkerAlt } from "react-icons/fa";
 import "./navbar.css";
 
 function NavBar() {
@@ -119,6 +119,19 @@ function NavBar() {
                       <p className="navbar__dropdown-email">{userInfo.email}</p>
                     </div>
                     <div className="navbar__dropdown-divider" />
+                    <Link to="/account" className="navbar__dropdown-item">
+                      <FaUserCircle size={16} />
+                      My Account
+                    </Link>
+                    <Link to="/account?tab=orders" className="navbar__dropdown-item">
+                      <FaBoxOpen size={16} />
+                      My Orders
+                    </Link>
+                    <Link to="/account?tab=addresses" className="navbar__dropdown-item">
+                      <FaMapMarkerAlt size={16} />
+                      Addresses
+                    </Link>
+                    <div className="navbar__dropdown-divider" />
                     {userInfo.isAdmin && (
                       <Link to="/admin" className="navbar__dropdown-item">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -214,6 +227,27 @@ function NavBar() {
                     Admin Panel
                   </Link>
                 )}
+                <Link
+                  to="/account"
+                  className="mobile-menu__action-btn"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  My Account
+                </Link>
+                <Link
+                  to="/account?tab=orders"
+                  className="mobile-menu__action-btn"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  My Orders
+                </Link>
+                <Link
+                  to="/account?tab=addresses"
+                  className="mobile-menu__action-btn"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Addresses
+                </Link>
                 <button onClick={handleLogout} className="mobile-menu__logout-btn">
                   Sign Out
                 </button>

@@ -351,6 +351,82 @@ router.post('/address', protect, async (req, res, next) => {
   }
 });
 
+// @desc    Update an existing address
+// @route   PUT /api/users/address/:id
+// @access  Private
+router.put('/address/:id', protect, async (req, res, next) => {
+  try {
+    const address = await Address.findOne({ _id: req.params.id, user: req.user._id });
+
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    const fields = [
+      'label', 'fullName', 'phone', 'addressLine', 'addressLine2',
+      'landmark', 'city', 'state', 'pincode', 'country', 'isDefault',
+    ];
+    fields.forEach((f) => {
+      if (req.body[f] !== undefined) address[f] = req.body[f];
+    });
+
+    const updated = await address.save();
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Set an address as the default
+// @route   PUT /api/users/address/:id/default
+// @access  Private
+router.put('/address/:id/default', protect, async (req, res, next) => {
+  try {
+    const address = await Address.findOne({ _id: req.params.id, user: req.user._id });
+
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    address.isDefault = true;
+    await address.save(); // pre-save hook unsets isDefault on the others
+
+    const addresses = await Address.find({ user: req.user._id }).sort({ isDefault: -1 });
+    res.json(addresses);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Delete an address
+// @route   DELETE /api/users/address/:id
+// @access  Private
+router.delete('/address/:id', protect, async (req, res, next) => {
+  try {
+    const address = await Address.findOne({ _id: req.params.id, user: req.user._id });
+
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    const wasDefault = address.isDefault;
+    await address.deleteOne();
+
+    // Promote another address to default so the user always has one.
+    if (wasDefault) {
+      const fallback = await Address.findOne({ user: req.user._id }).sort({ createdAt: 1 });
+      if (fallback) {
+        fallback.isDefault = true;
+        await fallback.save();
+      }
+    }
+
+    res.json({ message: 'Address removed' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @desc    Delete user (admin)
 // @route   DELETE /api/users/:id
 // @access  Private/Admin

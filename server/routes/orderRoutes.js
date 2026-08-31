@@ -10,7 +10,7 @@ const { protect, admin } = require('../middleware/authMiddleware');
 // @access  Private
 router.post('/', protect, async (req, res, next) => {
   try {
-    const { productId, quantity, totalPrice, paymentMethod } = req.body;
+    const { productId, quantity, totalPrice, paymentMethod, addressId } = req.body;
 
     if (!productId || !quantity || !totalPrice) {
       return res.status(400).json({ message: 'Product ID, quantity, and total price are required' });
@@ -26,9 +26,19 @@ router.post('/', protect, async (req, res, next) => {
       return res.status(400).json({ message: 'Product is out of stock' });
     }
 
-    // Get user's default address
-    const address = await Address.findOne({ user: req.user._id, isDefault: true }) ||
-                    await Address.findOne({ user: req.user._id });
+    // Resolve the shipping address: use the one chosen at checkout if provided
+    // (verifying ownership), otherwise fall back to the user's default.
+    let address;
+    if (addressId) {
+      address = await Address.findOne({ _id: addressId, user: req.user._id });
+      if (!address) {
+        return res.status(404).json({ message: 'Selected address not found' });
+      }
+    } else {
+      address =
+        (await Address.findOne({ user: req.user._id, isDefault: true })) ||
+        (await Address.findOne({ user: req.user._id }));
+    }
 
     if (!address) {
       return res.status(400).json({ message: 'Please add a shipping address before placing an order' });
