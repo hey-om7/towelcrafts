@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaUndo, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { API_URL } from "../config";
 import "./product_detail.css";
 
 function ProductDetail() {
@@ -14,7 +15,7 @@ function ProductDetail() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const response = await fetch(`http://localhost:5001/api/products/${productId}`);
+        const response = await fetch(`${API_URL}/api/products/${productId}`);
         if (!response.ok) throw new Error("Product not found");
         const data = await response.json();
         setProduct(data);
