@@ -110,9 +110,11 @@ router.get('/', protect, admin, async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 50;
     const skip = (page - 1) * limit;
     const status = req.query.status;
+    const paymentStatus = req.query.paymentStatus;
 
     const filter = {};
     if (status) filter.orderStatus = status;
+    if (paymentStatus) filter.paymentStatus = paymentStatus;
 
     const total = await Order.countDocuments(filter);
     const orders = await Order.find(filter)
@@ -203,11 +205,16 @@ router.put('/:id/status', protect, admin, async (req, res, next) => {
       if (orderStatus === 'cancelled') order.cancelledAt = new Date();
     }
 
-    if (trackingNumber) order.trackingNumber = trackingNumber;
+    if (trackingNumber !== undefined) order.trackingNumber = trackingNumber;
     if (paymentStatus) {
       order.paymentStatus = paymentStatus;
-      if (paymentStatus === 'completed') order.paidAt = new Date();
+      if (paymentStatus === 'completed') {
+        order.paidAt = new Date();
+        if (!order.paidAmount) order.paidAmount = order.totalPrice;
+      }
     }
+    if (req.body.paidAmount !== undefined) order.paidAmount = req.body.paidAmount;
+    if (req.body.notes !== undefined) order.notes = req.body.notes;
 
     const updatedOrder = await order.save();
     res.json(updatedOrder);

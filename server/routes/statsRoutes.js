@@ -152,4 +152,97 @@ router.get('/overview', protect, admin, async (req, res, next) => {
   }
 });
 
+// @desc    Monthly report for a given month (admin)
+// @route   GET /api/stats/monthly?month=YYYY-MM
+// @access  Private/Admin
+router.get('/monthly', protect, admin, async (req, res, next) => {
+  try {
+    const monthParam = req.query.month; // e.g. "2026-08"
+    const base = monthParam ? new Date(`${monthParam}-01T00:00:00`) : new Date();
+    if (isNaN(base.getTime())) {
+      return res.status(400).json({ message: 'Invalid month' });
+    }
+    const start = new Date(base.getFullYear(), base.getMonth(), 1);
+    const end = new Date(base.getFullYear(), base.getMonth() + 1, 1);
+    const range = { createdAt: { $gte: start, $lt: end } };
+    const validRange = { ...range, orderStatus: { $ne: 'cancelled' } };
+
+    const [
+      revenueAgg,
+      orderCount,
+      cancelledCount,
+      statusBreakdown,
+      paymentBreakdown,
+      topProductsAgg,
+      newCustomers,
+      dailyAgg,
+    ] = await Promise.all([
+      Order.aggregate([
+        { $match: validRange },
+        { $group: { _id: null, revenue: { $sum: '$totalPrice' }, paid: { $sum: '$paidAmount' } } },
+      ]),
+      Order.countDocuments(range),
+      Order.countDocuments({ ...range, orderStatus: 'cancelled' }),
+      Order.aggregate([
+        { $match: range },
+        { $group: { _id: '$orderStatus', count: { $sum: 1 } } },
+      ]),
+      Order.aggregate([
+        { $match: range },
+        { $group: { _id: '$paymentStatus', count: { $sum: 1 }, amount: { $sum: '$totalPrice' } } },
+      ]),
+      Order.aggregate([
+        { $match: validRange },
+        { $unwind: '$orderItems' },
+        {
+          $group: {
+            _id: '$orderItems.title',
+            units: { $sum: '$orderItems.quantity' },
+            revenue: { $sum: { $multiply: ['$orderItems.price', '$orderItems.quantity'] } },
+          },
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 10 },
+      ]),
+      User.countDocuments({ role: 'customer', createdAt: { $gte: start, $lt: end } }),
+      Order.aggregate([
+        { $match: validRange },
+        {
+          $group: {
+            _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            revenue: { $sum: '$totalPrice' },
+            orders: { $sum: 1 },
+          },
+        },
+        { $sort: { _id: 1 } },
+      ]),
+    ]);
+
+    const revenue = revenueAgg[0]?.revenue || 0;
+    const collected = revenueAgg[0]?.paid || 0;
+    const validOrders = orderCount - cancelledCount;
+
+    res.json({
+      month: `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`,
+      monthLabel: start.toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+      kpis: {
+        revenue,
+        collected,
+        outstanding: Math.max(revenue - collected, 0),
+        orderCount,
+        cancelledCount,
+        validOrders,
+        avgOrderValue: validOrders > 0 ? Math.round(revenue / validOrders) : 0,
+        newCustomers,
+      },
+      statusBreakdown: statusBreakdown.map((s) => ({ name: s._id || 'unknown', value: s.count })),
+      paymentBreakdown: paymentBreakdown.map((s) => ({ name: s._id || 'unknown', value: s.count, amount: s.amount })),
+      topProducts: topProductsAgg.map((p) => ({ name: p._id, units: p.units, revenue: p.revenue })),
+      daily: dailyAgg.map((d) => ({ date: d._id, revenue: d.revenue, orders: d.orders })),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 module.exports = router;

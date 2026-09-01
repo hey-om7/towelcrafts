@@ -427,6 +427,109 @@ router.delete('/address/:id', protect, async (req, res, next) => {
   }
 });
 
+// @desc    Get a single user with orders & addresses (admin)
+// @route   GET /api/users/:id
+// @access  Private/Admin
+router.get('/:id', protect, admin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const Order = require('../models/Order');
+    const [addresses, orders] = await Promise.all([
+      Address.find({ user: user._id }).sort({ isDefault: -1 }),
+      Order.find({ user: user._id }).sort({ createdAt: -1 }).limit(50),
+    ]);
+
+    const revenue = orders
+      .filter((o) => o.orderStatus !== 'cancelled')
+      .reduce((sum, o) => sum + (o.totalPrice || 0), 0);
+
+    res.json({
+      user,
+      addresses,
+      orders,
+      stats: { orderCount: orders.length, revenue },
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Modify a user (role / access / details) — admin
+// @route   PUT /api/users/:id
+// @access  Private/Admin
+router.put('/:id', protect, admin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { name, phone, role, isAdmin, isActive } = req.body;
+
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (role !== undefined && ['customer', 'admin', 'superadmin'].includes(role)) {
+      user.role = role;
+      // Keep the legacy isAdmin flag in sync with the role.
+      user.isAdmin = role === 'admin' || role === 'superadmin';
+    }
+    if (isAdmin !== undefined) user.isAdmin = !!isAdmin;
+    if (isActive !== undefined) user.isActive = !!isActive;
+
+    const updated = await user.save({ validateBeforeSave: false });
+    const obj = updated.toObject();
+    delete obj.password;
+    res.json(obj);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Update any user's address (admin)
+// @route   PUT /api/users/:userId/address/:addressId
+// @access  Private/Admin
+router.put('/:userId/address/:addressId', protect, admin, async (req, res, next) => {
+  try {
+    const address = await Address.findOne({ _id: req.params.addressId, user: req.params.userId });
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+
+    const fields = [
+      'label', 'fullName', 'phone', 'addressLine', 'addressLine2',
+      'landmark', 'city', 'state', 'pincode', 'country', 'isDefault',
+    ];
+    fields.forEach((f) => {
+      if (req.body[f] !== undefined) address[f] = req.body[f];
+    });
+
+    const updated = await address.save();
+    res.json(updated);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Delete any user's address (admin)
+// @route   DELETE /api/users/:userId/address/:addressId
+// @access  Private/Admin
+router.delete('/:userId/address/:addressId', protect, admin, async (req, res, next) => {
+  try {
+    const address = await Address.findOne({ _id: req.params.addressId, user: req.params.userId });
+    if (!address) {
+      return res.status(404).json({ message: 'Address not found' });
+    }
+    await address.deleteOne();
+    res.json({ message: 'Address removed' });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @desc    Delete user (admin)
 // @route   DELETE /api/users/:id
 // @access  Private/Admin

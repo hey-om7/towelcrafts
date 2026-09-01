@@ -10,15 +10,15 @@ import {
 import { API_URL } from "../config";
 
 // Theme palette for charts
-const COLORS = ["#5D7052", "#C5A059", "#7A8E6F", "#A68540", "#3F4F3A", "#D4B573"];
+const COLORS = ["#566A4B", "#9B7B4A", "#7C8E6E", "#7C6138", "#33402B", "#B89A6B"];
 const STATUS_COLORS = {
   placed: "#5A7A8C",
-  confirmed: "#C5A059",
-  processing: "#C5A059",
-  shipped: "#7A8E6F",
+  confirmed: "#9B7B4A",
+  processing: "#B89A6B",
+  shipped: "#7C8E6E",
   delivered: "#4A7C59",
-  cancelled: "#B85450",
-  returned: "#B85450",
+  cancelled: "#A24B47",
+  returned: "#A24B47",
 };
 
 const inr = (n) => "₹" + (n || 0).toLocaleString("en-IN");
@@ -96,8 +96,8 @@ export default function Overview() {
           <AreaChart data={salesSeries} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="revGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#5D7052" stopOpacity={0.3} />
-                <stop offset="95%" stopColor="#5D7052" stopOpacity={0} />
+                <stop offset="5%" stopColor="#566A4B" stopOpacity={0.3} />
+                <stop offset="95%" stopColor="#566A4B" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#E8EBE6" vertical={false} />
@@ -107,7 +107,7 @@ export default function Overview() {
               formatter={(v) => [inr(v), "Revenue"]}
               contentStyle={{ borderRadius: 12, border: "1px solid #E8EBE6", fontSize: 13 }}
             />
-            <Area type="monotone" dataKey="revenue" stroke="#5D7052" strokeWidth={2.5} fill="url(#revGradient)" />
+            <Area type="monotone" dataKey="revenue" stroke="#566A4B" strokeWidth={2.5} fill="url(#revGradient)" />
           </AreaChart>
         </ResponsiveContainer>
       </div>
@@ -128,7 +128,7 @@ export default function Overview() {
                 contentStyle={{ borderRadius: 12, border: "1px solid #E8EBE6", fontSize: 13 }}
                 cursor={{ fill: "rgba(93,112,82,0.06)" }}
               />
-              <Bar dataKey="orders" fill="#C5A059" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="orders" fill="#9B7B4A" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -182,7 +182,7 @@ export default function Overview() {
                   contentStyle={{ borderRadius: 12, border: "1px solid #E8EBE6", fontSize: 13 }}
                   cursor={{ fill: "rgba(93,112,82,0.06)" }}
                 />
-                <Bar dataKey="units" fill="#5D7052" radius={[0, 4, 4, 0]} />
+                <Bar dataKey="units" fill="#566A4B" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
