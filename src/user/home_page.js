@@ -118,7 +118,7 @@ export function HomePage() {
       <section className="manifesto">
         <div className="manifesto__inner">
           <span className="eyebrow eyebrow--rule" data-reveal>
-            The House of Ambarkar
+            The House of TowelCrafts
           </span>
           <p className="manifesto__lead" data-reveal data-reveal-delay="1">
             We believe a towel is not an afterthought. It is the first thing
@@ -265,7 +265,7 @@ export function HomePage() {
         <div className="quote__inner" data-reveal>
           <span className="quote__mark" aria-hidden="true">&ldquo;</span>
           <blockquote className="quote__body">
-            The softest towels I have ever owned. After switching to Ambarkar, I
+            The softest towels I have ever owned. After switching to TowelCrafts, I
             cannot imagine anything else — it is like wrapping yourself in a
             cloud.
           </blockquote>
@@ -302,8 +302,8 @@ export function SiteFooter() {
         <div className="footer__top">
           <div className="footer__brand">
             <div className="footer__logo">
-              <span className="footer__logo-text">Ambarkar</span>
-              <span className="footer__logo-accent">Industries</span>
+              <span className="footer__logo-text">Towel</span>
+              <span className="footer__logo-accent">Crafts</span>
             </div>
             <p className="footer__tagline">
               Redefining comfort, one towel at a time. Premium textiles crafted
@@ -342,7 +342,7 @@ export function SiteFooter() {
         </div>
 
         <div className="footer__bottom">
-          <p>&copy; {new Date().getFullYear()} Ambarkar Industries. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} TowelCrafts. All rights reserved.</p>
           <p>Crafted with care in India</p>
         </div>
       </div>

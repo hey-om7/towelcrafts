@@ -144,7 +144,7 @@ app.use('/api/stats', require('./routes/statsRoutes'));
 app.get('/', (req, res) => {
   res.json({
     status: 'healthy',
-    message: 'Ambarkar Industries API',
+    message: 'TowelCrafts API',
     version: '2.0.0',
     timestamp: new Date().toISOString(),
   });

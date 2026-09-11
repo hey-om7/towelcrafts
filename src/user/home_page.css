@@ -688,7 +688,7 @@
 .footer__logo {
   display: flex;
   align-items: baseline;
-  gap: 0.4em;
+  gap: 0;
   margin-bottom: var(--space-5);
 }
 
@@ -700,11 +700,9 @@
 }
 
 .footer__logo-accent {
-  font-family: var(--font-body);
-  font-size: 0.62rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-widest);
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 400;
   color: var(--color-accent-light);
 }
 

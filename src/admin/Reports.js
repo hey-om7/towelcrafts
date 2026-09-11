@@ -39,7 +39,7 @@ export default function Reports() {
   const downloadCsv = () => {
     if (!data) return;
     const lines = [];
-    lines.push(`Ambarkar Industries — Monthly Report,${data.monthLabel}`);
+    lines.push(`TowelCrafts — Monthly Report,${data.monthLabel}`);
     lines.push("");
     lines.push("Metric,Value");
     lines.push(`Revenue,${data.kpis.revenue}`);
@@ -60,7 +60,7 @@ export default function Reports() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `ambarkar-report-${data.month}.csv`;
+    a.download = `towelcrafts-report-${data.month}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -75,7 +75,7 @@ export default function Reports() {
     .kpi{border:1px solid #dcd7c8;border-radius:6px;padding:14px}.kpi b{display:block;font-size:22px;color:#33402b}
     table{width:100%;border-collapse:collapse;margin-top:12px}th,td{padding:8px;border-bottom:1px solid #eceadf;font-size:14px;text-align:left}
     .num{text-align:right}@media print{body{padding:0}}</style></head><body>
-    <p class="sub">Ambarkar Industries — Monthly Report</p><h1>${data.monthLabel}</h1>
+    <p class="sub">TowelCrafts — Monthly Report</p><h1>${data.monthLabel}</h1>
     <div class="kpis">
       <div class="kpi"><span>Revenue</span><b>${inr(data.kpis.revenue)}</b></div>
       <div class="kpi"><span>Collected</span><b>${inr(data.kpis.collected)}</b></div>

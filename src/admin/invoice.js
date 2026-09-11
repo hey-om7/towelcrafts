@@ -74,7 +74,7 @@ export function printInvoice(order) {
 <body>
   <div class="inv">
     <div class="inv__head">
-      <div class="brand">Ambarkar<small>Industries</small></div>
+      <div class="brand">Towel<small>Crafts</small></div>
       <div class="inv__meta">
         <div><strong>Invoice</strong></div>
         <div>${escapeHtml(order.orderNumber || order._id || "")}</div>
@@ -125,7 +125,7 @@ export function printInvoice(order) {
     </div>
 
     <div class="foot">
-      Ambarkar Industries · Akkalkot Road, Solapur, Maharashtra 413001 · Thank you for your purchase.
+      TowelCrafts · Akkalkot Road, Solapur, Maharashtra 413001 · Thank you for your purchase.
     </div>
   </div>
   <script>window.onload = function(){ window.print(); }</script>

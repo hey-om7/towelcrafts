@@ -44,7 +44,7 @@ export function ContactUs() {
               <FaMapMarkerAlt />
             </div>
             <h3>Visit Us</h3>
-            <p>Ambarkar Industries</p>
+            <p>TowelCrafts</p>
             <p>Akkalkot Road,<br />Solapur, Maharashtra 413001</p>
           </div>
         </div>

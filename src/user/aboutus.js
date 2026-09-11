@@ -8,7 +8,7 @@ export function AboutUs() {
         <div className="page__hero-inner">
           <span className="page__label">Our Story</span>
           <h1 className="page__title">
-            Ambarkar Industries
+            TowelCrafts
           </h1>
           <p className="page__subtitle">
             Crafting excellence in premium textiles for over 25 years
@@ -19,7 +19,7 @@ export function AboutUs() {
       <div className="page__body">
         <div className="about-story">
           <p>
-            At <span className="highlight">Ambarkar Industries</span>, quality is not just a
+            At <span className="highlight">TowelCrafts</span>, quality is not just a
             promise — it is a tradition refined over decades. With more than{" "}
             <strong>25 years of experience</strong> in the textile industry, we stand as a
             trusted name known for precision, reliability, and uncompromising standards.
@@ -74,7 +74,7 @@ export function AboutUs() {
 
         <div className="about-footer">
           <p>
-            At <span>Ambarkar Industries</span>, we don't just manufacture textiles —
+            At <span>TowelCrafts</span>, we don't just manufacture textiles —
             we build long-term trust through excellence.
           </p>
         </div>

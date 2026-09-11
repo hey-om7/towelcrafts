@@ -71,8 +71,8 @@ function NavBar() {
         <div className="navbar__inner">
           {/* Logo */}
           <Link to="/" className="navbar__logo">
-            <span className="navbar__logo-text">Ambarkar</span>
-            <span className="navbar__logo-accent">Industries</span>
+            <span className="navbar__logo-text">Towel</span>
+            <span className="navbar__logo-accent">Crafts</span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -178,8 +178,8 @@ function NavBar() {
         <div className="mobile-menu__panel">
           <div className="mobile-menu__header">
             <Link to="/" className="navbar__logo" onClick={() => setMobileOpen(false)}>
-              <span className="navbar__logo-text">Ambarkar</span>
-              <span className="navbar__logo-accent">Industries</span>
+              <span className="navbar__logo-text">Towel</span>
+              <span className="navbar__logo-accent">Crafts</span>
             </Link>
             <button
               className="mobile-menu__close"

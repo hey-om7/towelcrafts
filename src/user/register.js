@@ -64,8 +64,8 @@ export function Register() {
       {/* Visual Panel */}
       <div className="auth__visual">
         <div className="auth__brand">
-          <span className="auth__brand-text">Ambarkar</span>
-          <span className="auth__brand-accent">Industries</span>
+          <span className="auth__brand-text">Towel</span>
+          <span className="auth__brand-accent">Crafts</span>
         </div>
 
         <div className="auth__visual-content">
@@ -99,8 +99,8 @@ export function Register() {
       <div className="auth__form-panel">
         <div className="auth__form-wrap">
           <div className="auth__mobile-brand">
-            <span className="auth__brand-text">Ambarkar</span>
-            <span className="auth__brand-accent">Industries</span>
+            <span className="auth__brand-text">Towel</span>
+            <span className="auth__brand-accent">Crafts</span>
           </div>
 
           <div className="auth__header">
