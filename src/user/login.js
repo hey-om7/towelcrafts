@@ -46,6 +46,7 @@ export function Login() {
       {/* Visual Panel */}
       <div className="auth__visual">
         <div className="auth__brand">
+          <img src="/towelcrafts-logo.png" alt="" className="auth__brand-mark auth__brand-mark--light" aria-hidden="true" />
           <span className="auth__brand-text">Towel</span>
           <span className="auth__brand-accent">Crafts</span>
         </div>
@@ -81,6 +82,7 @@ export function Login() {
       <div className="auth__form-panel">
         <div className="auth__form-wrap">
           <div className="auth__mobile-brand">
+            <img src="/towelcrafts-logo.png" alt="" className="auth__brand-mark" aria-hidden="true" />
             <span className="auth__brand-text">Towel</span>
             <span className="auth__brand-accent">Crafts</span>
           </div>

@@ -56,6 +56,14 @@
   color: inherit;
 }
 
+.navbar__logo-mark {
+  height: 2rem;
+  width: auto;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+  align-self: center;
+}
+
 .navbar__logo-text {
   font-family: var(--font-heading);
   font-size: 1.5rem;
@@ -74,6 +82,7 @@
 
 .navbar--transparent .navbar__logo-text { color: var(--color-white); }
 .navbar--transparent .navbar__logo-accent { color: rgba(255, 255, 255, 0.75); }
+.navbar--transparent .navbar__logo-mark { filter: brightness(0) invert(1); }
 
 /* ── Links ──────────────────────────────── */
 .navbar__links {
@@ -505,6 +514,7 @@
 @media (max-width: 480px) {
   .navbar__logo-text,
   .navbar__logo-accent { font-size: 1.3rem; }
+  .navbar__logo-mark { height: 1.75rem; }
 }
 
 @keyframes fadeInDown {

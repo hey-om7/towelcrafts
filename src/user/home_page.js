@@ -302,6 +302,7 @@ export function SiteFooter() {
         <div className="footer__top">
           <div className="footer__brand">
             <div className="footer__logo">
+              <img src="/towelcrafts-logo.png" alt="" className="footer__logo-mark" aria-hidden="true" />
               <span className="footer__logo-text">Towel</span>
               <span className="footer__logo-accent">Crafts</span>
             </div>

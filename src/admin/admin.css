@@ -32,6 +32,14 @@
   margin-bottom: var(--space-6);
 }
 
+.admin__brand-mark {
+  height: 1.75rem;
+  width: auto;
+  margin-right: 0.5rem;
+  align-self: center;
+  filter: brightness(0) invert(1);
+}
+
 .admin__brand-text {
   font-family: var(--font-heading);
   font-size: var(--text-lg);

@@ -82,6 +82,7 @@ export function AdminDashboard() {
       {/* Sidebar (desktop) */}
       <aside className="admin__sidebar">
         <div className="admin__brand">
+          <img src="/towelcrafts-logo.png" alt="" className="admin__brand-mark" aria-hidden="true" />
           <span className="admin__brand-text">TowelCrafts</span>
           <span className="admin__brand-accent">Admin</span>
         </div>
@@ -106,6 +107,7 @@ export function AdminDashboard() {
         <div className="admin__drawer-backdrop" onClick={() => setDrawerOpen(false)} />
         <div className="admin__drawer-panel">
           <div className="admin__brand">
+            <img src="/towelcrafts-logo.png" alt="" className="admin__brand-mark" aria-hidden="true" />
             <span className="admin__brand-text">TowelCrafts</span>
             <span className="admin__brand-accent">Admin</span>
             <button className="admin__drawer-close" onClick={() => setDrawerOpen(false)} aria-label="Close menu"><FaTimes /></button>

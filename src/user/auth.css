@@ -51,6 +51,17 @@
   gap: 0;
 }
 
+.auth__brand-mark {
+  height: 2rem;
+  width: auto;
+  margin-right: 0.5rem;
+  align-self: center;
+}
+
+.auth__brand-mark--light {
+  filter: brightness(0) invert(1);
+}
+
 .auth__brand-text {
   font-family: var(--font-heading);
   font-size: var(--text-xl);
