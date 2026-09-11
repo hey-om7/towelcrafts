@@ -17,10 +17,13 @@
   color: var(--color-white);
   display: flex;
   flex-direction: column;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
   height: 100vh;
+  overflow-y: auto;
   padding: var(--space-6) var(--space-4);
+  z-index: 50;
 }
 
 .admin__brand {
@@ -124,6 +127,7 @@
 ═══════════════════════════════════════════ */
 .admin__content {
   flex: 1;
+  margin-left: 260px;
   padding: var(--space-8);
   overflow-x: auto;
 }
@@ -654,6 +658,7 @@
   }
 
   .admin__content {
+    margin-left: 0;
     padding: var(--space-4);
   }
 

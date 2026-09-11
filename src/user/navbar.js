@@ -51,6 +51,11 @@ function NavBar() {
     return () => { document.body.style.overflow = ""; };
   }, [mobileOpen]);
 
+  // Hide the storefront navbar on admin routes — the admin section has its own chrome.
+  if (location.pathname.startsWith("/admin")) {
+    return null;
+  }
+
   const isHome = location.pathname === "/";
   const isActive = (path) => location.pathname === path;
 
