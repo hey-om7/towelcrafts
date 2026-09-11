@@ -75,8 +75,6 @@ const products = [
     color: 'Ruby',
     featured: true,
     stockQuantity: 40,
-    rating: 4.8,
-    numReviews: 24,
     tags: ['bath robe', 'cotton', 'plush', 'unisex'],
   },
   {
@@ -96,8 +94,6 @@ const products = [
     color: 'Emerald',
     featured: true,
     stockQuantity: 45,
-    rating: 4.6,
-    numReviews: 18,
     tags: ['bath robe', 'waffle', 'lightweight'],
   },
   {
@@ -117,8 +113,6 @@ const products = [
     color: 'Royal White',
     featured: false,
     stockQuantity: 30,
-    rating: 4.9,
-    numReviews: 31,
     tags: ['bath robe', 'hooded', 'luxury', 'premium'],
   },
 
@@ -140,8 +134,6 @@ const products = [
     color: 'Azure',
     featured: true,
     stockQuantity: 90,
-    rating: 4.5,
-    numReviews: 42,
     tags: ['hair towel', 'quick-dry', 'anti-frizz'],
   },
   {
@@ -161,8 +153,6 @@ const products = [
     color: 'Powder Blue',
     featured: false,
     stockQuantity: 100,
-    rating: 4.3,
-    numReviews: 56,
     tags: ['hair towel', 'turban', 'everyday'],
   },
   {
@@ -182,8 +172,6 @@ const products = [
     color: 'Sky Blue',
     featured: true,
     stockQuantity: 65,
-    rating: 4.7,
-    numReviews: 33,
     tags: ['hair towel', 'curls', 'premium'],
   },
 
@@ -205,8 +193,6 @@ const products = [
     color: 'Natural Beige',
     featured: false,
     stockQuantity: 80,
-    rating: 4.4,
-    numReviews: 27,
     tags: ['bath towel', 'textured', 'eco-friendly'],
   },
   {
@@ -226,8 +212,6 @@ const products = [
     color: 'Ivory',
     featured: false,
     stockQuantity: 85,
-    rating: 4.5,
-    numReviews: 39,
     tags: ['bath towel', 'waffle', 'quick-dry'],
   },
   {
@@ -247,8 +231,6 @@ const products = [
     color: 'Charcoal Grey',
     featured: true,
     stockQuantity: 50,
-    rating: 4.8,
-    numReviews: 22,
     tags: ['bath towel', 'herringbone', 'designer'],
   },
 
@@ -270,8 +252,6 @@ const products = [
     color: 'Obsidian Black',
     featured: false,
     stockQuantity: 40,
-    rating: 4.6,
-    numReviews: 15,
     tags: ['adult towel', 'oversized', 'antibacterial'],
   },
   {
@@ -291,8 +271,6 @@ const products = [
     color: 'Graphite',
     featured: true,
     stockQuantity: 35,
-    rating: 4.7,
-    numReviews: 19,
     tags: ['adult towel', 'premium', 'odor-resistant'],
   },
   {
@@ -312,8 +290,6 @@ const products = [
     color: 'Deep Black',
     featured: true,
     stockQuantity: 20,
-    rating: 4.9,
-    numReviews: 12,
     tags: ['adult towel', 'flagship', 'ultra-premium'],
   },
 
@@ -335,8 +311,6 @@ const products = [
     color: 'Soft Green',
     featured: true,
     stockQuantity: 70,
-    rating: 4.9,
-    numReviews: 28,
     tags: ['infant', 'hooded', 'organic', 'hypoallergenic'],
   },
   {
@@ -356,8 +330,6 @@ const products = [
     color: 'Ruby',
     featured: false,
     stockQuantity: 80,
-    rating: 4.7,
-    numReviews: 21,
     tags: ['kids', 'colorful', 'organic'],
   },
   {
@@ -377,8 +349,6 @@ const products = [
     color: 'Sky Blue',
     featured: true,
     stockQuantity: 100,
-    rating: 4.8,
-    numReviews: 34,
     tags: ['infant', 'washcloth', 'set', 'organic'],
   },
 ];

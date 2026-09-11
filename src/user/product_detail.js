@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaUndo, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { API_URL } from "../config";
+import ProductReviews from "./ProductReviews";
 import "./product_detail.css";
 
 function ProductDetail() {
@@ -137,7 +138,7 @@ function ProductDetail() {
             )}
             <h1 className="pd-info__title">{product.title}</h1>
 
-            {product.rating > 0 && (
+            {product.numReviews > 0 && product.rating > 0 ? (
               <div className="pd-info__rating">
                 <div className="pd-info__stars">
                   {[...Array(5)].map((_, i) => (
@@ -148,7 +149,13 @@ function ProductDetail() {
                   ))}
                 </div>
                 <span className="pd-info__rating-text">
-                  {product.rating} ({product.numReviews} reviews)
+                  {product.rating} ({product.numReviews} review{product.numReviews > 1 ? "s" : ""})
+                </span>
+              </div>
+            ) : (
+              <div className="pd-info__rating">
+                <span className="pd-info__rating-text pd-info__rating-text--empty">
+                  No reviews yet
                 </span>
               </div>
             )}
@@ -233,6 +240,9 @@ function ProductDetail() {
           </div>
         </div>
       </div>
+
+      {/* Reviews */}
+      <ProductReviews productId={productId} />
     </div>
   );
 }

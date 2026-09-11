@@ -27,7 +27,8 @@ const feedbackSchema = mongoose.Schema(
     },
     review: {
       type: String,
-      required: [true, 'Review text is required'],
+      trim: true,
+      default: '',
       maxlength: [1000, 'Review cannot exceed 1000 characters'],
     },
     type: {
@@ -52,6 +53,19 @@ feedbackSchema.index({ product: 1 });
 feedbackSchema.index({ status: 1 });
 feedbackSchema.index({ rating: -1 });
 feedbackSchema.index({ createdAt: -1 });
+
+// One product review per user per product (partial: only applies to product reviews
+// that reference a product). General feedback is unaffected.
+feedbackSchema.index(
+  { user: 1, product: 1 },
+  {
+    unique: true,
+    partialFilterExpression: {
+      type: 'product_review',
+      product: { $exists: true },
+    },
+  }
+);
 
 const Feedback = mongoose.model('Feedback', feedbackSchema);
 
