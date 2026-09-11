@@ -154,6 +154,17 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* Standard scrollbar props ONLY for engines that don't support the
+   ::-webkit-scrollbar pseudo-elements (Firefox). Scoping this here is
+   important: if these were set unconditionally, Chrome/Safari would
+   honor them and IGNORE the webkit rules below. */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #8a7247 var(--color-bg-warm);
+  }
+}
+
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -620,14 +631,33 @@ input, textarea, select {
 /* ═══════════════════════════════════════════
    SCROLLBAR & SELECTION
 ═══════════════════════════════════════════ */
-::-webkit-scrollbar { width: 10px; }
-::-webkit-scrollbar-track { background: var(--color-bg-warm); }
+/* Scrollbar tuned to the warm editorial palette (Chrome / Safari / Edge).
+   A defined width forces a persistent, non-overlay bar so it always reads
+   as part of the page rather than the faded macOS system overlay. */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-warm);
+  border-left: 1px solid var(--color-border-light);
+}
 ::-webkit-scrollbar-thumb {
-  background: var(--color-text-muted);
+  background-color: #8a7247;
   border-radius: var(--radius-full);
   border: 3px solid var(--color-bg-warm);
+  background-clip: padding-box;
+  transition: background-color 200ms var(--ease-out);
 }
-::-webkit-scrollbar-thumb:hover { background: var(--color-text-light); }
+::-webkit-scrollbar-thumb:hover {
+  background-color: #6f5c39;
+}
+::-webkit-scrollbar-thumb:active {
+  background-color: var(--color-primary-dark);
+}
+::-webkit-scrollbar-corner {
+  background: var(--color-bg-warm);
+}
 
 ::selection {
   background: var(--color-primary-dark);

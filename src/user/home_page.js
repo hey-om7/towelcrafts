@@ -63,13 +63,19 @@ export function HomePage() {
       {/* ── HERO ─────────────────────────────── */}
       <section className="hero">
         <div className="hero__media">
-          <img
-            src="/hero_luxury_towel.png"
-            alt="Folded premium cotton towels arranged on soft linen"
-            className="hero__image"
-            fetchPriority="high"
-            decoding="async"
-          />
+          <picture>
+            <source
+              media="(min-width: 768px)"
+              srcSet="/hero_landscape.jpeg"
+            />
+            <img
+              src="/hero_luxury_towel.png"
+              alt="Folded premium cotton towels arranged on soft linen"
+              className="hero__image"
+              fetchPriority="high"
+              decoding="async"
+            />
+          </picture>
           <div className="hero__scrim" />
         </div>
 

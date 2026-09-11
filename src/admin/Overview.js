@@ -23,6 +23,28 @@ const STATUS_COLORS = {
 
 const inr = (n) => "₹" + (n || 0).toLocaleString("en-IN");
 
+// Renders the slice value inside the pie so labels never overflow / crop.
+const renderPieValueLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, value }) => {
+  if (!value) return null;
+  const RADIAN = Math.PI / 180;
+  const radius = innerRadius + (outerRadius - innerRadius) * 0.6;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  return (
+    <text
+      x={x}
+      y={y}
+      fill="#FFFFFF"
+      fontSize={12}
+      fontWeight={600}
+      textAnchor="middle"
+      dominantBaseline="central"
+    >
+      {value}
+    </text>
+  );
+};
+
 export default function Overview() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -194,16 +216,17 @@ export default function Overview() {
           <div className="overview__panel-head">
             <h3>Catalog by Category</h3>
           </div>
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
+          <ResponsiveContainer width="100%" height={280}>
+            <PieChart margin={{ top: 8, right: 8, bottom: 8, left: 8 }}>
               <Pie
                 data={categoryDistribution}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius={90}
-                label={(e) => e.value}
+                outerRadius={80}
+                labelLine={false}
+                label={renderPieValueLabel}
               >
                 {categoryDistribution.map((entry, i) => (
                   <Cell key={entry.name} fill={COLORS[i % COLORS.length]} />
