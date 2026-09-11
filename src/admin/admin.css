@@ -407,6 +407,37 @@
   min-height: 100px;
 }
 
+.admin__image-preview {
+  margin-top: var(--space-2);
+  width: 140px;
+  height: 140px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: var(--color-bg-warm);
+}
+
+.admin__image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.admin__image-preview-hint,
+.admin__image-preview-error {
+  margin: var(--space-2) 0 0;
+  font-size: var(--text-sm);
+}
+
+.admin__image-preview-hint {
+  color: var(--color-text-light);
+}
+
+.admin__image-preview-error {
+  color: var(--color-error);
+}
+
 .admin__form-actions {
   display: flex;
   gap: var(--space-3);
