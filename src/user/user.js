@@ -9,6 +9,7 @@ import { Buy } from "./buy";
 import { CheckLogin } from "./checklogin";
 import { Cart } from "./cart";
 import UserNavbar from "./navbar";
+import ScrollToTop from "./ScrollToTop";
 
 
 import OrderCompleted from "./order_completed";
@@ -25,6 +26,7 @@ export function User() {
   return (
     <div>
       <UserNavbar />
+      <ScrollToTop />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/about" element={<AboutUs />} />
