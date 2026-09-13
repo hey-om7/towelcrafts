@@ -2,7 +2,7 @@ import "./products.css";
 import { Link, useParams } from "react-router-dom";
 import { FaArrowLeft, FaStar } from "react-icons/fa";
 import { categories as fallbackCategories } from "./data";
-import { API_URL } from "../config";
+import { API_URL, imageUrl } from "../config";
 import { useState, useEffect } from "react";
 
 function ProductCards() {
@@ -100,7 +100,7 @@ function ProductCards() {
                 style={{ animationDelay: `${index * 0.08}s` }}
               >
                 <div className="product-card__image">
-                  <img src={product.image} alt={product.title} loading="lazy" />
+                  <img src={imageUrl(product.image)} alt={product.title} loading="lazy" />
                   {product.originalPrice && product.originalPrice > product.price && (
                     <span className="product-card__badge">
                       {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF

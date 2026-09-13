@@ -13,7 +13,7 @@ import {
   FaPlus,
   FaTimes,
 } from "react-icons/fa";
-import { API_URL } from "../config";
+import { API_URL, imageUrl } from "../config";
 import { SiteFooter } from "./home_page";
 import "./account.css";
 
@@ -279,7 +279,7 @@ function OrderCard({ order, onCancel, cancelling }) {
         {items.map((item, i) => (
           <div className="order-card__item" key={i}>
             <div className="order-card__thumb">
-              {item.image ? <img src={item.image} alt={item.title} /> : <FaBoxOpen />}
+              {item.image ? <img src={imageUrl(item.image)} alt={item.title} /> : <FaBoxOpen />}
             </div>
             <div className="order-card__item-info">
               <span className="order-card__item-title">{item.title}</span>

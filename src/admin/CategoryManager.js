@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
-import { API_URL } from "../config";
+import { API_URL, imageUrl } from "../config";
+import { ImageUploader } from "./ImageUploader";
 
 function CategoryForm({ category, onCancel, onSaved }) {
   const isNew = category === "new" || !category;
@@ -74,8 +75,13 @@ function CategoryForm({ category, onCancel, onSaved }) {
           <input type="text" name="subtitle" className="admin__form-input" value={form.subtitle} onChange={handleChange} placeholder="e.g. Wrap & Unwind" />
         </div>
         <div className="admin__form-group admin__form-group--full">
-          <label className="admin__form-label">Image URL</label>
-          <input type="text" name="image" className="admin__form-input" value={form.image} onChange={handleChange} placeholder="/category_image.png" required />
+          <ImageUploader
+            label="Category Image"
+            required
+            folder="categories"
+            value={form.image}
+            onChange={(url) => setForm((f) => ({ ...f, image: url }))}
+          />
         </div>
         <div className="admin__form-group admin__form-group--full">
           <label className="admin__form-label">Description</label>
@@ -187,7 +193,7 @@ export default function CategoryManager() {
               <tr key={cat._id}>
                 <td>
                   <div className="admin__table-product">
-                    <img src={cat.image} alt={cat.title} />
+                    <img src={imageUrl(cat.image)} alt={cat.title} />
                     <div>
                       <div className="admin__table-product-name">{cat.title}</div>
                       <div className="admin__mono">{cat.subtitle}</div>

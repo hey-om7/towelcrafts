@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { categories as fallbackCategories } from "../user/data";
 import { API_URL } from "../config";
+import { ImageUploader } from "./ImageUploader";
 
 export function ProductEdit({ product, onCancel }) {
   const isNew = product === "new" || !product;
@@ -44,13 +45,9 @@ export function ProductEdit({ product, onCancel }) {
   });
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [imageError, setImageError] = useState(false);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    if (name === "image") {
-      setImageError(false);
-    }
     if (name === "categoryId") {
       const cat = categories.find((c) => c.id === Number(value));
       setForm((f) => ({ ...f, categoryId: Number(value), category: cat ? cat.title : "" }));
@@ -171,35 +168,15 @@ export function ProductEdit({ product, onCancel }) {
         </div>
 
         <div className="admin__form-group admin__form-group--full">
-          <label className="admin__form-label">Image URL</label>
-          <input
-            type="text"
-            name="image"
-            className="admin__form-input"
-            value={form.image}
-            onChange={handleChange}
-            placeholder="/product_image.png"
+          <ImageUploader
+            label="Product Image"
             required
+            folder="products"
+            value={form.image}
+            onChange={(url) => {
+              setForm((f) => ({ ...f, image: url }));
+            }}
           />
-          {form.image ? (
-            imageError ? (
-              <p className="admin__image-preview-error">
-                Image could not be loaded. Check the URL or path.
-              </p>
-            ) : (
-              <div className="admin__image-preview">
-                <img
-                  src={form.image}
-                  alt={form.title ? `Preview of ${form.title}` : "Product image preview"}
-                  onError={() => setImageError(true)}
-                />
-              </div>
-            )
-          ) : (
-            <p className="admin__image-preview-hint">
-              Enter an image path to see a preview.
-            </p>
-          )}
         </div>
 
         <div className="admin__form-group admin__form-group--full">

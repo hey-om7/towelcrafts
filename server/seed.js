@@ -1,5 +1,7 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const fs = require('fs');
+const path = require('path');
 const connectDB = require('./config/db');
 const Product = require('./models/Product');
 const User = require('./models/User');
@@ -13,12 +15,27 @@ dotenv.config();
 
 connectDB();
 
+// If images have been migrated to R2 (via migrateImagesToR2.js), a manifest
+// maps each local /public path to its R2 public URL. When present, seed data
+// is rewritten to use those URLs so a re-seed stays consistent with the bucket.
+// Without the manifest, the original /public paths are kept (still valid via
+// the frontend imageUrl() helper).
+const R2_MAP = (() => {
+  try {
+    return JSON.parse(fs.readFileSync(path.resolve(__dirname, 'r2-migration-map.json'), 'utf8'));
+  } catch {
+    return {};
+  }
+})();
+
+const img = (p) => R2_MAP[p] || p;
+
 const categories = [
   {
     _id: 1,
     title: 'Bath Robes',
     subtitle: 'Wrap & Unwind',
-    image: '/category_cotton_1770900530532.png',
+    image: img('/category_cotton_1770900530532.png'),
     description: 'Plush, absorbent bath robes that turn every morning into a spa ritual.',
     displayOrder: 1,
   },
@@ -26,7 +43,7 @@ const categories = [
     _id: 2,
     title: 'Hair Towels',
     subtitle: 'Gentle Drying',
-    image: '/category_filament_1770900548571.png',
+    image: img('/category_filament_1770900548571.png'),
     description: 'Ultra-absorbent, frizz-free hair towels and wraps for healthier hair.',
     displayOrder: 2,
   },
@@ -34,7 +51,7 @@ const categories = [
     _id: 3,
     title: 'Bath Towels',
     subtitle: 'Everyday Luxury',
-    image: '/category_mixed_1770900596346.png',
+    image: img('/category_mixed_1770900596346.png'),
     description: 'Soft, quick-drying bath towels crafted for daily indulgence.',
     displayOrder: 3,
   },
@@ -42,7 +59,7 @@ const categories = [
     _id: 4,
     title: 'Adult Towels',
     subtitle: 'Premium & Durable',
-    image: '/category_carbon_1770900631300.png',
+    image: img('/category_carbon_1770900631300.png'),
     description: 'Generously sized premium towels built for lasting comfort and durability.',
     displayOrder: 4,
   },
@@ -50,7 +67,7 @@ const categories = [
     _id: 5,
     title: 'Kids & Infant Care',
     subtitle: 'Soft & Safe',
-    image: '/emerald_cotton_towel_1770901516592.png',
+    image: img('/emerald_cotton_towel_1770901516592.png'),
     description: 'Hypoallergenic, chemical-free towels designed for delicate young skin.',
     displayOrder: 5,
   },
@@ -67,7 +84,7 @@ const products = [
     description:
       'A plush, full-length bath robe crafted from premium 100% cotton terry. Wrap yourself in spa-like comfort with its generous cut, shawl collar, and deep pockets.',
     shortDescription: 'Plush full-length cotton terry robe',
-    image: '/ruby_cotton_towel_1770901499695.png',
+    image: img('/ruby_cotton_towel_1770901499695.png'),
     category: 'Bath Robes',
     material: '100% Egyptian Cotton Terry',
     weight: '450 GSM',
@@ -86,7 +103,7 @@ const products = [
     description:
       'A lightweight waffle-weave robe that is breathable yet absorbent — perfect for warm climates and quick post-shower comfort.',
     shortDescription: 'Lightweight, breathable waffle-weave robe',
-    image: '/emerald_cotton_towel_1770901516592.png',
+    image: img('/emerald_cotton_towel_1770901516592.png'),
     category: 'Bath Robes',
     material: 'Cotton-Modal Waffle Weave',
     weight: '350 GSM',
@@ -105,7 +122,7 @@ const products = [
     description:
       'Our flagship hooded bath robe in ultra-soft double-loop cotton. Indulgent warmth, superior absorbency, and hotel-grade luxury for your home.',
     shortDescription: 'Ultra-soft hooded double-loop cotton robe',
-    image: '/category_cotton_1770900530532.png',
+    image: img('/category_cotton_1770900530532.png'),
     category: 'Bath Robes',
     material: '100% Pima Cotton',
     weight: '500 GSM',
@@ -126,7 +143,7 @@ const products = [
     description:
       'An ultra-absorbent microfiber hair wrap with a button-loop fastening. Dries hair faster, reduces frizz, and is gentle on delicate strands.',
     shortDescription: 'Frizz-free microfiber hair wrap',
-    image: '/azure_filament_towel_1772994066528.png',
+    image: img('/azure_filament_towel_1772994066528.png'),
     category: 'Hair Towels',
     material: 'Microfiber',
     weight: '300 GSM',
@@ -145,7 +162,7 @@ const products = [
     description:
       'A soft, lightweight turban-style hair towel that stays securely in place. Perfect for everyday drying and pampering routines.',
     shortDescription: 'Secure, lightweight turban hair towel',
-    image: '/powder_filament_towel_1772994082480.png',
+    image: img('/powder_filament_towel_1772994082480.png'),
     category: 'Hair Towels',
     material: 'Bamboo-Cotton Blend',
     weight: '280 GSM',
@@ -164,7 +181,7 @@ const products = [
     description:
       'Specially designed for curly and textured hair, this ultra-plush hair towel preserves curl definition while gently absorbing moisture.',
     shortDescription: 'Plush towel for curly & textured hair',
-    image: '/sky_filament_towel_1772994099377.png',
+    image: img('/sky_filament_towel_1772994099377.png'),
     category: 'Hair Towels',
     material: 'Premium Microfiber',
     weight: '320 GSM',
@@ -185,7 +202,7 @@ const products = [
     description:
       'A soft, quick-drying bath towel with a subtle texture. The cotton-bamboo blend offers the perfect balance of plushness and durability.',
     shortDescription: 'Soft quick-drying everyday bath towel',
-    image: '/texture_blend_towel_1772993685886.png',
+    image: img('/texture_blend_towel_1772993685886.png'),
     category: 'Bath Towels',
     material: 'Cotton-Bamboo Blend',
     weight: '450 GSM',
@@ -204,7 +221,7 @@ const products = [
     description:
       'A luxurious bath towel with a distinctive waffle pattern that enhances drying and adds a designer touch to your bathroom.',
     shortDescription: 'Designer waffle-pattern bath towel',
-    image: '/waffle_weave_towel_1772993702203.png',
+    image: img('/waffle_weave_towel_1772993702203.png'),
     category: 'Bath Towels',
     material: 'Cotton-Modal Blend',
     weight: '420 GSM',
@@ -223,7 +240,7 @@ const products = [
     description:
       'A premium bath towel with a classic herringbone weave. Supremely soft, highly absorbent, and a statement piece in any bathroom.',
     shortDescription: 'Classic herringbone statement towel',
-    image: '/herringbone_towel_1772993722425.png',
+    image: img('/herringbone_towel_1772993722425.png'),
     category: 'Bath Towels',
     material: 'Cotton-Tencel Blend',
     weight: '500 GSM',
@@ -244,7 +261,7 @@ const products = [
     description:
       'A generously sized adult bath towel infused with activated carbon for natural antibacterial protection and lasting freshness.',
     shortDescription: 'Oversized carbon-infused adult towel',
-    image: '/millionaire_towel_1772993750517.png',
+    image: img('/millionaire_towel_1772993750517.png'),
     category: 'Adult Towels',
     material: 'Carbon-Infused Cotton',
     weight: '550 GSM',
@@ -263,7 +280,7 @@ const products = [
     description:
       'A luxurious full-size adult towel with odor-resistant carbon fiber technology and enhanced durability for years of use.',
     shortDescription: 'Odor-resistant premium adult towel',
-    image: '/billionaire_towel_1772993769293.png',
+    image: img('/billionaire_towel_1772993769293.png'),
     category: 'Adult Towels',
     material: 'Activated Carbon Cotton',
     weight: '600 GSM',
@@ -282,7 +299,7 @@ const products = [
     description:
       'Our flagship adult towel featuring the most advanced nano-carbon cotton — ultra-plush, ultra-absorbent, and built to last a lifetime.',
     shortDescription: 'Flagship ultra-plush adult towel',
-    image: '/trillionaire_towel_1772993789927.png',
+    image: img('/trillionaire_towel_1772993789927.png'),
     category: 'Adult Towels',
     material: 'Nano Carbon Premium Cotton',
     weight: '700 GSM',
@@ -303,7 +320,7 @@ const products = [
     description:
       'An adorable hooded towel for babies made from hypoallergenic, chemical-free organic cotton. Extra gentle on delicate newborn skin.',
     shortDescription: 'Hypoallergenic hooded baby towel',
-    image: '/emerald_cotton_towel_1770901516592.png',
+    image: img('/emerald_cotton_towel_1770901516592.png'),
     category: 'Kids & Infant Care',
     material: 'Organic Cotton (Chemical-Free)',
     weight: '350 GSM',
@@ -322,7 +339,7 @@ const products = [
     description:
       'A soft, colorful bath towel sized just right for children. Skin-safe dyes and gentle fibers make bath time fun and comfortable.',
     shortDescription: 'Colorful skin-safe towel for kids',
-    image: '/ruby_cotton_towel_1770901499695.png',
+    image: img('/ruby_cotton_towel_1770901499695.png'),
     category: 'Kids & Infant Care',
     material: 'Organic Cotton',
     weight: '380 GSM',
@@ -341,7 +358,7 @@ const products = [
     description:
       'A set of ultra-soft baby washcloths, perfect for gentle cleansing. Made from breathable organic cotton that is kind to sensitive skin.',
     shortDescription: 'Set of ultra-soft organic washcloths',
-    image: '/sky_filament_towel_1772994099377.png',
+    image: img('/sky_filament_towel_1772994099377.png'),
     category: 'Kids & Infant Care',
     material: 'Organic Cotton Muslin',
     weight: '250 GSM',

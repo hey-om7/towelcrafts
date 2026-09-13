@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { FaInstagram, FaTwitter, FaLinkedin, FaArrowRight } from "react-icons/fa";
 import { categories as fallbackCategories } from "./data";
 import { useScrollReveal } from "./useScrollReveal";
-import { API_URL } from "../config";
+import { API_URL, imageUrl } from "../config";
 import "./home_page.css";
 
 const VALUES = [
@@ -148,7 +148,7 @@ export function HomePage() {
           >
             <div className="craft__media" data-reveal>
               <span className="craft__index">{item.index}</span>
-              <img src={item.image} alt={item.title} loading="lazy" />
+              <img src={imageUrl(item.image)} alt={item.title} loading="lazy" />
             </div>
             <div className="craft__body" data-reveal data-reveal-delay="1">
               <h2 className="craft__title">{item.title}</h2>
@@ -180,7 +180,7 @@ export function HomePage() {
             >
               <div className="collections__feature-media">
                 <img
-                  src={featured.image}
+                  src={imageUrl(featured.image)}
                   alt={featured.title}
                   loading="lazy"
                 />
@@ -205,7 +205,7 @@ export function HomePage() {
                     {String(i + 2).padStart(2, "0")}
                   </span>
                   <span className="collections__row-thumb">
-                    <img src={cat.image} alt="" loading="lazy" />
+                    <img src={imageUrl(cat.image)} alt="" loading="lazy" />
                   </span>
                   <span className="collections__row-text">
                     <span className="collections__row-name">{cat.title}</span>

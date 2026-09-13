@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
-import { API_URL } from "../config";
+import { API_URL, imageUrl } from "../config";
 
 export function ProductList({ onEdit }) {
   const [products, setProducts] = useState([]);
@@ -99,7 +99,7 @@ export function ProductList({ onEdit }) {
               <tr key={product._id}>
                 <td>
                   <div className="admin__table-product">
-                    <img src={product.image} alt={product.title} />
+                    <img src={imageUrl(product.image)} alt={product.title} />
                     <span className="admin__table-product-name">{product.title}</span>
                   </div>
                 </td>

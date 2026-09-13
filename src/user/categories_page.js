@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight } from 'react-icons/fa';
 import { categories as fallbackCategories } from './data';
-import { API_URL } from '../config';
+import { API_URL, imageUrl } from '../config';
 import './categories_page.css';
 
 export function CategoriesPage() {
@@ -58,7 +58,7 @@ export function CategoriesPage() {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="cat-card__image">
-                <img src={category.image} alt={category.title} loading="lazy" />
+                <img src={imageUrl(category.image)} alt={category.title} loading="lazy" />
                 <div className="cat-card__overlay">
                   <span className="cat-card__cta">
                     Explore

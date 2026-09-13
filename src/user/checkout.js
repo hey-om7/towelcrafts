@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { FaLock, FaMapMarkerAlt, FaShieldAlt, FaArrowLeft, FaPlus, FaCheck } from 'react-icons/fa';
-import { API_URL } from '../config';
+import { API_URL, imageUrl } from '../config';
 import { useCart } from './CartContext';
 import './checkout.css';
 
@@ -236,7 +236,7 @@ export default function Checkout() {
               {lineItems.map((line) => (
                 <div className="checkout__product" key={line.productId}>
                   <div className="checkout__product-image">
-                    <img src={line.image} alt={line.title} />
+                    <img src={imageUrl(line.image)} alt={line.title} />
                   </div>
                   <div className="checkout__product-info">
                     <span className="checkout__product-category">{line.category}</span>

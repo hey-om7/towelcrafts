@@ -139,6 +139,7 @@ app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/feedbacks', require('./routes/feedbackRoutes'));
 app.use('/api/stats', require('./routes/statsRoutes'));
+app.use('/api/uploads', require('./routes/uploadRoutes'));
 
 // Health checks
 app.get('/', (req, res) => {

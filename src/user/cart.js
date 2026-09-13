@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { FaTrashAlt, FaArrowLeft, FaShoppingBag, FaLock } from "react-icons/fa";
 import { useCart } from "./CartContext";
+import { imageUrl } from "../config";
 import "./cart.css";
 
 export function Cart() {
@@ -61,7 +62,7 @@ export function Cart() {
             {items.map((item) => (
               <li className="cart-line" key={item.id}>
                 <Link to={`/category/${item.categoryId ?? ""}/product/${item.id}`} className="cart-line__image">
-                  <img src={item.image} alt={item.title} loading="lazy" />
+                  <img src={imageUrl(item.image)} alt={item.title} loading="lazy" />
                 </Link>
 
                 <div className="cart-line__body">
