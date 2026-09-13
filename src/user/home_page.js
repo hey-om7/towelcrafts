@@ -81,7 +81,7 @@ export function HomePage() {
 
         <div className="hero__inner">
           <div className="hero__content">
-            <span className="hero__eyebrow">Premium Textiles · Since 2020</span>
+            <span className="hero__eyebrow">Premium Textiles · Since 1970</span>
             <h1 className="hero__title">
               Wrap yourself
               <br />

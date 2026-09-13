@@ -154,17 +154,6 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
-/* Standard scrollbar props ONLY for engines that don't support the
-   ::-webkit-scrollbar pseudo-elements (Firefox). Scoping this here is
-   important: if these were set unconditionally, Chrome/Safari would
-   honor them and IGNORE the webkit rules below. */
-@supports not selector(::-webkit-scrollbar) {
-  html {
-    scrollbar-width: thin;
-    scrollbar-color: #8a7247 var(--color-bg-warm);
-  }
-}
-
 body {
   margin: 0;
   font-family: var(--font-body);
@@ -657,6 +646,16 @@ input, textarea, select {
 }
 ::-webkit-scrollbar-corner {
   background: var(--color-bg-warm);
+}
+
+/* Firefox only: `@supports (-moz-appearance:none)` is false in Chrome/Safari,
+   so this never sets the standard props there (which would disable the
+   webkit rules above). */
+@supports (-moz-appearance: none) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #8a7247 var(--color-bg-warm);
+  }
 }
 
 ::selection {

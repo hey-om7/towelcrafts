@@ -23,8 +23,8 @@ export function ContactUs() {
             </div>
             <h3>Email Us</h3>
             <p>For general inquiries and order support</p>
-            <a href="mailto:jambarkar1@gmail.com" className="contact-card__link">
-              jambarkar1@gmail.com
+            <a href="mailto:care.towelcrafts@gmail.com" className="contact-card__link">
+              care.towelcrafts@gmail.com
             </a>
           </div>
 
@@ -35,7 +35,7 @@ export function ContactUs() {
             <h3>Call Us</h3>
             <p>Monday – Friday, 9am – 6pm IST</p>
             <a href="tel:+919850680630" className="contact-card__link">
-              +91 98506 80630
+              +91 744777 6777
             </a>
           </div>
 

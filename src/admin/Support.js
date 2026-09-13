@@ -58,8 +58,8 @@ export default function Support() {
           <p>Respond to customer messages below. For direct contact, customers reach us via:</p>
         </div>
         <div className="admin__help-contacts">
-          <span><FaEnvelope /> jambarkar1@gmail.com</span>
-          <span><FaPhone /> +91 98506 80630</span>
+          <span><FaEnvelope /> care.towelcrafts@gmail.com</span>
+          <span><FaPhone /> +91 744777 6777</span>
           <span><FaMapMarkerAlt /> Solapur, Maharashtra</span>
         </div>
       </div>
