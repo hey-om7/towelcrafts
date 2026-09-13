@@ -11,11 +11,6 @@ export function Register() {
     email: "",
     password: "",
     phone: "",
-    addressLine: "",
-    city: "",
-    state: "",
-    pincode: "",
-    country: "India",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
@@ -180,74 +175,9 @@ export function Register() {
               </div>
             </div>
 
-            <div className="auth__section-label">Shipping Address</div>
-
-            <div className="auth__field">
-              <label className="auth__label">Address Line</label>
-              <input
-                type="text"
-                name="addressLine"
-                className="auth__input"
-                value={form.addressLine}
-                onChange={handleChange}
-                placeholder="Street, house/flat number"
-                required
-                autoComplete="street-address"
-              />
-            </div>
-
-            <div className="auth__row">
-              <div className="auth__field">
-                <label className="auth__label">City</label>
-                <input
-                  type="text"
-                  name="city"
-                  className="auth__input"
-                  value={form.city}
-                  onChange={handleChange}
-                  placeholder="City"
-                  required
-                />
-              </div>
-              <div className="auth__field">
-                <label className="auth__label">State</label>
-                <input
-                  type="text"
-                  name="state"
-                  className="auth__input"
-                  value={form.state}
-                  onChange={handleChange}
-                  placeholder="State"
-                />
-              </div>
-            </div>
-
-            <div className="auth__row">
-              <div className="auth__field">
-                <label className="auth__label">Pincode</label>
-                <input
-                  type="text"
-                  name="pincode"
-                  className="auth__input"
-                  value={form.pincode}
-                  onChange={handleChange}
-                  placeholder="6-digit pincode"
-                  required
-                />
-              </div>
-              <div className="auth__field">
-                <label className="auth__label">Country</label>
-                <input
-                  type="text"
-                  name="country"
-                  className="auth__input"
-                  value={form.country}
-                  onChange={handleChange}
-                  placeholder="Country"
-                  required
-                />
-              </div>
-            </div>
+            <p className="auth__note">
+              You can add a shipping address later from your account.
+            </p>
 
             <button type="submit" className="auth__submit" disabled={loading}>
               {loading ? <span className="auth__spinner" /> : "Create Account"}

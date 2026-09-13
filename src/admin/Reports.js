@@ -92,7 +92,7 @@ export default function Reports() {
   };
 
   return (
-    <div>
+    <div className="reports">
       <div className="admin__toolbar">
         <label className="admin__filter">
           <span>Month</span>
@@ -109,7 +109,7 @@ export default function Reports() {
       ) : error ? (
         <div className="admin__error">{error}</div>
       ) : (
-        <>
+        <div className="reports__body">
           <div className="admin__report-head">
             <h2>{data.monthLabel}</h2>
             <p>Monthly performance summary</p>
@@ -156,7 +156,7 @@ export default function Reports() {
               ) : <div className="overview__empty">No orders this month</div>}
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

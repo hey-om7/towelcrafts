@@ -850,10 +850,28 @@
 .admin__support-body { font-size: var(--text-sm); color: var(--color-text-secondary); line-height: var(--leading-relaxed); margin: 0 0 var(--space-4); }
 .admin__support-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-top: var(--space-3); border-top: 1px solid var(--color-border-light); }
 
+/* Reports layout — consistent vertical rhythm */
+.reports {
+  display: flex;
+  flex-direction: column;
+}
+
+.reports__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
 /* Report head */
-.admin__report-head { margin-bottom: var(--space-6); }
-.admin__report-head h2 { font-size: var(--display-sm); font-weight: 400; color: var(--color-primary-dark); margin: 0; }
-.admin__report-head p { font-size: var(--text-sm); color: var(--color-text-light); margin: var(--space-1) 0 0; }
+.admin__report-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding-bottom: var(--space-5);
+  border-bottom: 1px solid var(--color-border-light);
+}
+.admin__report-head h2 { font-size: var(--display-sm); font-weight: 400; color: var(--color-primary-dark); margin: 0; line-height: 1.15; }
+.admin__report-head p { font-size: var(--text-sm); color: var(--color-text-light); margin: 0; }
 
 /* ═══════════════════════════════════════════
    MOBILE — v2

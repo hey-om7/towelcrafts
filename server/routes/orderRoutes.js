@@ -4,6 +4,8 @@ const Order = require('../models/Order');
 const Address = require('../models/Address');
 const Product = require('../models/Product');
 const { protect, admin } = require('../middleware/authMiddleware');
+const { sendMail } = require('../utils/mailer');
+const { orderConfirmationEmail } = require('../utils/emailTemplates');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -79,6 +81,18 @@ router.post('/', protect, async (req, res, next) => {
       product.inStock = false;
     }
     await product.save();
+
+    // Send order-confirmation email (fire-and-forget — never blocks or
+    // fails the order response if email is unconfigured or SMTP errors).
+    if (req.user.email) {
+      const { subject, html, text } = orderConfirmationEmail({
+        customerName: req.user.name,
+        order: createdOrder.toObject(),
+      });
+      sendMail({ to: req.user.email, subject, html, text }).catch((err) =>
+        console.error('[orders] confirmation email error:', err.message)
+      );
+    }
 
     res.status(201).json(createdOrder);
   } catch (error) {
