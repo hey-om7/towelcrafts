@@ -5,7 +5,7 @@ const Address = require('../models/Address');
 const Product = require('../models/Product');
 const { protect, admin } = require('../middleware/authMiddleware');
 const { sendMail } = require('../utils/mailer');
-const { orderConfirmationEmail } = require('../utils/emailTemplates');
+const { orderConfirmationEmail, orderStatusEmail, EMAILABLE_STATUSES } = require('../utils/emailTemplates');
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -253,12 +253,18 @@ router.get('/:id', protect, async (req, res, next) => {
 router.put('/:id/status', protect, admin, async (req, res, next) => {
   try {
     const { orderStatus, trackingNumber, paymentStatus } = req.body;
+    // When the admin toggles "skip email", the client sends sendEmail:false.
+    // Default is to send an email on an emailable status change.
+    const sendEmail = req.body.sendEmail !== false;
 
-    const order = await Order.findById(req.params.id);
+    const order = await Order.findById(req.params.id).populate('user', 'name email');
 
     if (!order) {
       return res.status(404).json({ message: 'Order not found' });
     }
+
+    // Remember the previous status so we only email on an actual change.
+    const previousStatus = order.orderStatus;
 
     if (orderStatus) {
       order.orderStatus = orderStatus;
@@ -279,7 +285,46 @@ router.put('/:id/status', protect, admin, async (req, res, next) => {
     if (req.body.notes !== undefined) order.notes = req.body.notes;
 
     const updatedOrder = await order.save();
-    res.json(updatedOrder);
+
+    // Fire the status-change email (fire-and-forget) when:
+    //  - the order status actually changed,
+    //  - the new status is one we email customers about,
+    //  - the admin did not opt to skip the email,
+    //  - and we have a recipient address.
+    const statusChanged = orderStatus && orderStatus !== previousStatus;
+    const recipient = order.user && order.user.email;
+    let emailQueued = false;
+
+    if (statusChanged && sendEmail && EMAILABLE_STATUSES.includes(orderStatus) && recipient) {
+      const built = orderStatusEmail({
+        customerName: order.user.name,
+        status: orderStatus,
+        order: updatedOrder.toObject(),
+      });
+      if (built) {
+        // Await the send so we can report the true outcome to the admin UI.
+        // sendMail never throws — it resolves to { sent, skipped?, error? }.
+        const result = await sendMail({
+          to: recipient,
+          subject: built.subject,
+          html: built.html,
+          text: built.text,
+        });
+        emailQueued = Boolean(result && result.sent);
+        if (!emailQueued) {
+          console.error(
+            '[orders] status email not sent:',
+            result && (result.error || (result.skipped ? 'email disabled/not configured' : 'unknown'))
+          );
+        }
+      }
+    }
+
+    // Return the updated order plus whether an email was actually sent, so the
+    // admin UI can reflect the true result instead of assuming success.
+    const responseObj = updatedOrder.toObject();
+    responseObj.emailQueued = emailQueued;
+    res.json(responseObj);
   } catch (error) {
     next(error);
   }

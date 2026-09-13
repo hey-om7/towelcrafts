@@ -23,8 +23,8 @@ export function ContactUs() {
             </div>
             <h3>Email Us</h3>
             <p>For general inquiries and order support</p>
-            <a href="mailto:care.towelcrafts@gmail.com" className="contact-card__link">
-              care.towelcrafts@gmail.com
+            <a href="mailto:care@towelcrafts.in" className="contact-card__link">
+              care@towelcrafts.in
             </a>
           </div>
 

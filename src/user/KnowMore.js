@@ -50,8 +50,8 @@ export default function KnowMore() {
 
           <p className="contact-text">
             Please email me at{" "}
-            <a href="mailto:care.towelcrafts@gmail.com">
-              care.towelcrafts@gmail.com
+            <a href="mailto:care@towelcrafts.in">
+              care@towelcrafts.in
             </a>
           </p>
         </div>

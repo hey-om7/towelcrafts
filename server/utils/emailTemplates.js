@@ -28,6 +28,8 @@ const C = {
   textLight: '#6C7360',
   textMuted: '#9AA08C',
   success: '#4A7C59',
+  error: '#A24B47',
+  info: '#5A7A8C',
 };
 
 const SERIF = "'Fraunces', Georgia, 'Times New Roman', serif";
@@ -314,4 +316,285 @@ function orderConfirmationEmail({ customerName, order, storeUrl }) {
   return { subject, html, text: textLines.join('\n') };
 }
 
-module.exports = { orderConfirmationEmail };
+/**
+ * Per-status content for order status-change emails.
+ * Each entry drives the header, headline, message and status pill.
+ */
+const STATUS_CONTENT = {
+  confirmed: {
+    header: 'Order Confirmed',
+    headline: (name) => `Good news, ${name}.`,
+    message:
+      "Your order has been confirmed and is now queued for preparation. We'll let you know the moment it moves to the next stage.",
+    pill: 'Confirmed',
+    pillColor: C.brass,
+    accent: C.brass,
+    showTracking: false,
+    subject: (n) => `Your TowelCrafts order ${n} is confirmed`,
+    preheader: (n) => `Order ${n} is confirmed and being prepared.`,
+  },
+  processing: {
+    header: 'Being Prepared',
+    headline: (name) => `We're on it, ${name}.`,
+    message:
+      "Your order is now being carefully prepared and packed by our team. It will be handed to the courier shortly.",
+    pill: 'Processing',
+    pillColor: C.brass,
+    accent: C.brass,
+    showTracking: false,
+    subject: (n) => `Your TowelCrafts order ${n} is being prepared`,
+    preheader: (n) => `Order ${n} is being prepared for dispatch.`,
+  },
+  shipped: {
+    header: 'On Its Way',
+    headline: (name) => `It's shipped, ${name}!`,
+    message:
+      "Your order has left our facility and is on its way to you. Use the tracking reference below to follow its journey.",
+    pill: 'Shipped',
+    pillColor: C.info,
+    accent: C.info,
+    showTracking: true,
+    subject: (n) => `Your TowelCrafts order ${n} has shipped`,
+    preheader: (n) => `Order ${n} is on its way to you.`,
+  },
+  delivered: {
+    header: 'Delivered',
+    headline: (name) => `Enjoy, ${name}.`,
+    message:
+      "Your order has been delivered. We hope you love it. If anything isn't quite right, simply reply to this email and we'll make it good.",
+    pill: 'Delivered',
+    pillColor: C.success,
+    accent: C.success,
+    showTracking: false,
+    subject: (n) => `Your TowelCrafts order ${n} has been delivered`,
+    preheader: (n) => `Order ${n} has been delivered — we hope you love it.`,
+  },
+  cancelled: {
+    header: 'Order Cancelled',
+    headline: (name) => `Hello ${name},`,
+    message:
+      "Your order has been cancelled. If a payment was made, any eligible refund will be processed to your original payment method. If this was unexpected, please reply to this email.",
+    pill: 'Cancelled',
+    pillColor: C.error,
+    accent: C.error,
+    showTracking: false,
+    subject: (n) => `Your TowelCrafts order ${n} has been cancelled`,
+    preheader: (n) => `Order ${n} has been cancelled.`,
+  },
+  returned: {
+    header: 'Return Processed',
+    headline: (name) => `Hello ${name},`,
+    message:
+      "We've received and processed the return for your order. Any eligible refund will be issued to your original payment method within a few business days.",
+    pill: 'Returned',
+    pillColor: C.error,
+    accent: C.error,
+    showTracking: false,
+    subject: (n) => `Your TowelCrafts order ${n} return has been processed`,
+    preheader: (n) => `The return for order ${n} has been processed.`,
+  },
+};
+
+/**
+ * Build an order status-change email (subject + html + text) for one of the
+ * lifecycle statuses: confirmed, processing, shipped, delivered, cancelled,
+ * returned.
+ *
+ * Returns null for statuses that should not trigger a customer email
+ * (e.g. 'placed', which is covered by the confirmation email).
+ *
+ * @param {Object} p
+ * @param {string} p.customerName
+ * @param {string} p.status    One of the STATUS_CONTENT keys
+ * @param {Object} p.order     Saved order document (plain or mongoose doc)
+ * @param {string} [p.storeUrl]
+ */
+function orderStatusEmail({ customerName, status, order, storeUrl }) {
+  const content = STATUS_CONTENT[status];
+  if (!content) return null;
+
+  const store = storeUrl || process.env.STORE_URL || 'http://localhost:3000';
+  const orderNumber = order.orderNumber || String(order._id || '').slice(-8).toUpperCase();
+  const firstName = (customerName || 'there').trim().split(/\s+/)[0] || 'there';
+
+  const items = Array.isArray(order.orderItems) && order.orderItems.length
+    ? order.orderItems
+    : [
+        {
+          title: order.title || 'Item',
+          quantity: order.quantity || 1,
+          price: order.subtotal || order.totalPrice || 0,
+        },
+      ];
+
+  const itemSummary = items
+    .map((it) => `${esc(it.title)} <span style="color:${C.textLight};">× ${esc(it.quantity || 1)}</span>`)
+    .join('<br>');
+
+  const trackingBlock =
+    content.showTracking && order.trackingNumber
+      ? `
+          <tr>
+            <td style="padding:24px 40px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paper};border:1px solid ${C.borderLight};border-radius:4px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <span style="display:block;font-family:${SANS};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${C.textMuted};margin-bottom:4px;">Tracking Reference</span>
+                    <span style="display:block;font-family:${SERIF};font-size:18px;color:${C.forest};font-weight:400;">${esc(order.trackingNumber)}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>`
+      : '';
+
+  const subject = content.subject(orderNumber);
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <title>${esc(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:${C.paperWarm};-webkit-font-smoothing:antialiased;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:${C.paperWarm};">
+    ${esc(content.preheader(orderNumber))}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paperWarm};padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background-color:${C.card};border:1px solid ${C.border};border-radius:4px;overflow:hidden;">
+
+          <!-- Header band -->
+          <tr>
+            <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
+              <div style="font-family:${SANS};font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${C.brassLight};margin-bottom:10px;">
+                TowelCrafts
+              </div>
+              <div style="font-family:${SERIF};font-size:30px;font-weight:400;color:${C.white};line-height:1.15;">
+                ${esc(content.header)}
+              </div>
+              <div style="width:44px;height:2px;background-color:${content.accent};margin:16px auto 0;"></div>
+            </td>
+          </tr>
+
+          <!-- Intro -->
+          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 14px;font-family:${SERIF};font-size:22px;color:${C.forest};font-weight:400;">
+                ${esc(content.headline(firstName))}
+              </p>
+              <p style="margin:0;font-family:${SANS};font-size:15px;line-height:1.65;color:${C.textSecondary};">
+                ${esc(content.message)}
+              </p>
+            </td>
+          </tr>
+
+          <!-- Order meta -->
+          <tr>
+            <td style="padding:26px 40px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paper};border:1px solid ${C.borderLight};border-radius:4px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <span style="display:block;font-family:${SANS};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${C.textMuted};margin-bottom:4px;">Order Number</span>
+                    <span style="display:block;font-family:${SERIF};font-size:18px;color:${C.forest};font-weight:400;">${esc(orderNumber)}</span>
+                  </td>
+                  <td align="right" style="padding:16px 20px;">
+                    <span style="display:block;font-family:${SANS};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${C.textMuted};margin-bottom:6px;">Status</span>
+                    <span style="display:inline-block;padding:5px 12px;border-radius:2px;font-family:${SANS};font-size:12px;font-weight:600;letter-spacing:0.04em;color:${C.white};background-color:${content.pillColor};">${esc(content.pill)}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+          ${trackingBlock}
+
+          <!-- Items summary -->
+          <tr>
+            <td style="padding:26px 40px 0;">
+              <div style="font-family:${SANS};font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:${content.accent};font-weight:600;padding-bottom:8px;border-bottom:2px solid ${C.forest};">
+                Order Summary
+              </div>
+              <p style="margin:14px 0 0;font-family:${SANS};font-size:15px;line-height:1.7;color:${C.ink};">
+                ${itemSummary}
+              </p>
+              <p style="margin:14px 0 0;font-family:${SERIF};font-size:18px;color:${C.forest};font-weight:700;">
+                Total ${inr(order.totalPrice)}
+              </p>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td align="center" style="padding:34px 40px 8px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:2px;background-color:${C.forest};">
+                    <a href="${esc(store)}/account/orders" target="_blank"
+                       style="display:inline-block;padding:14px 34px;font-family:${SANS};font-size:14px;font-weight:600;letter-spacing:0.04em;color:${C.white};text-decoration:none;">
+                      View Your Order
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Note -->
+          <tr>
+            <td style="padding:20px 40px 36px;">
+              <p style="margin:0;font-family:${SANS};font-size:13px;line-height:1.6;color:${C.textLight};text-align:center;">
+                Questions about your order? Simply reply to this email and we'll be glad to help.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:${C.paper};border-top:1px solid ${C.borderLight};padding:26px 40px;text-align:center;">
+              <div style="font-family:${SERIF};font-size:16px;color:${C.forest};margin-bottom:6px;">TowelCrafts</div>
+              <p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.6;color:${C.textMuted};">
+                Considered towels, woven for everyday ritual.<br>
+                © ${new Date().getFullYear()} TowelCrafts. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const textLines = [
+    `TOWELCRAFTS — ${content.header.toUpperCase()}`,
+    ``,
+    content.headline(firstName),
+    content.message,
+    ``,
+    `Order number: ${orderNumber}`,
+    `Status: ${content.pill}`,
+    content.showTracking && order.trackingNumber ? `Tracking: ${order.trackingNumber}` : '',
+    ``,
+    `Items:`,
+    ...items.map((it) => `  - ${it.title}  (Qty ${it.quantity || 1})`),
+    ``,
+    `Total: ${inr(order.totalPrice)}`,
+    ``,
+    `View your order: ${store}/account/orders`,
+    ``,
+    `© ${new Date().getFullYear()} TowelCrafts`,
+  ].filter((l) => l !== '');
+
+  return { subject, html, text: textLines.join('\n') };
+}
+
+// Statuses that trigger a customer-facing email.
+const EMAILABLE_STATUSES = Object.keys(STATUS_CONTENT);
+
+module.exports = { orderConfirmationEmail, orderStatusEmail, EMAILABLE_STATUSES };

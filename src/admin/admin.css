@@ -945,3 +945,107 @@
   .admin__search { min-width: 100%; }
   .admin__modal-overlay { padding: var(--space-4) var(--space-3); }
 }
+
+
+/* ═══════════════════════════════════════════
+   Status-change email confirmation dialog
+═══════════════════════════════════════════ */
+/* Center only when the overlay holds a small confirm dialog. */
+.admin__modal-overlay:has(.admin__confirm) {
+  align-items: center;
+}
+.admin__confirm {
+  width: 100%;
+  max-width: 440px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-2xl);
+  padding: var(--space-8) var(--space-8) var(--space-6);
+  text-align: center;
+  animation: scaleIn 0.25s var(--ease-out);
+}
+.admin__confirm-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--space-5);
+  font-size: var(--text-xl);
+  color: var(--color-accent-dark);
+  background: var(--color-secondary);
+  border-radius: var(--radius-full);
+}
+.admin__confirm-title {
+  font-family: var(--font-heading);
+  font-size: var(--text-2xl);
+  font-weight: 400;
+  color: var(--color-primary-dark);
+  margin: 0 0 var(--space-3);
+}
+.admin__confirm-text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-secondary);
+  margin: 0 auto var(--space-2);
+  max-width: 34ch;
+}
+.admin__confirm-text strong { color: var(--color-primary-dark); font-weight: 600; }
+.admin__confirm-note {
+  font-size: var(--text-xs);
+  line-height: var(--leading-snug);
+  color: var(--color-warning);
+  margin: var(--space-2) auto 0;
+  max-width: 36ch;
+}
+.admin__confirm-actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-6);
+}
+.admin__confirm-actions .admin__btn {
+  width: 100%;
+  justify-content: center;
+}
+.admin__confirm-cancel {
+  margin-top: var(--space-4);
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: var(--space-2);
+  transition: color var(--transition-fast);
+}
+.admin__confirm-cancel:hover { color: var(--color-text-secondary); }
+
+/* ── Toast ──────────────────────────────── */
+.admin__toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-8);
+  transform: translateX(-50%);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: calc(100vw - var(--space-8));
+  padding: var(--space-4) var(--space-6);
+  background: var(--color-primary-darker);
+  color: var(--color-bg-light);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-xl);
+  font-size: var(--text-sm);
+  animation: fadeInUp 0.3s var(--ease-out);
+}
+.admin__toast-icon {
+  flex-shrink: 0;
+  color: var(--color-success);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin__confirm,
+  .admin__toast { animation: none; }
+}

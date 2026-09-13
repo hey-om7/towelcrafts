@@ -1,11 +1,25 @@
 import { useState, useEffect, useCallback } from "react";
-import { FaFileInvoice, FaEye, FaTimes } from "react-icons/fa";
+import { FaFileInvoice, FaEye, FaTimes, FaEnvelope, FaCheck } from "react-icons/fa";
 import { API_URL } from "../config";
 import { printInvoice } from "./invoice";
 
 const ORDER_STATUSES = ["placed", "confirmed", "processing", "shipped", "delivered", "cancelled", "returned"];
 const PAYMENT_STATUSES = ["pending", "partial", "completed", "refunded", "failed"];
 
+// Statuses that trigger a customer-facing email (mirrors server EMAILABLE_STATUSES).
+const EMAILABLE_STATUSES = ["confirmed", "processing", "shipped", "delivered", "cancelled", "returned"];
+
+// Short, human descriptions shown in the confirmation dialog.
+const STATUS_EMAIL_COPY = {
+  confirmed: "confirming the order and that it's being prepared",
+  processing: "letting them know the order is being prepared for dispatch",
+  shipped: "letting them know the order has shipped, with tracking details",
+  delivered: "confirming the order has been delivered",
+  cancelled: "informing them the order has been cancelled",
+  returned: "confirming the return has been processed",
+};
+
+const cap = (s) => s[0].toUpperCase() + s.slice(1);
 const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
 export default function Orders() {
@@ -14,6 +28,10 @@ export default function Orders() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("all");
   const [active, setActive] = useState(null); // order open in modal
+  const [toast, setToast] = useState(null); // { message }
+  // Pending status change awaiting the admin's email decision.
+  // { id, patch, order, newStatus, onDone }
+  const [confirm, setConfirm] = useState(null);
 
   const authHeaders = () => {
     const userInfo = JSON.parse(localStorage.getItem("userInfo"));
@@ -40,16 +58,72 @@ export default function Orders() {
     fetchOrders();
   }, [fetchOrders]);
 
-  const saveOrder = async (id, patch) => {
+  const showToast = (message) => {
+    setToast({ message });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  // Persist a status/detail change. Returns the updated order (or null on error).
+  const saveOrder = useCallback(async (id, patch) => {
     const res = await fetch(`${API_URL}/api/orders/${id}/status`, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(patch),
     });
-    if (res.ok) {
-      const updated = await res.json();
-      setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, ...updated } : o)));
-      setActive((a) => (a && a._id === id ? { ...a, ...updated } : a));
+    if (!res.ok) return null;
+    const updated = await res.json();
+    setOrders((prev) => prev.map((o) => (o._id === id ? { ...o, ...updated } : o)));
+    setActive((a) => (a && a._id === id ? { ...a, ...updated } : a));
+    return updated;
+  }, []);
+
+  const customerEmail = (order) => order.user?.email || order.userId?.email || "";
+  const customerLabel = (order) => order.user?.name || order.userId?.name || "the customer";
+
+  /**
+   * Request a status change. If the new status is emailable and differs from
+   * the current one, open the confirmation dialog so the admin can choose to
+   * send the email or skip it. Otherwise save immediately.
+   *
+   * @param {Object} order   the order being changed
+   * @param {Object} patch   fields to persist (must include orderStatus)
+   * @param {Function} [onDone] optional callback after a successful save
+   */
+  const requestStatusChange = (order, patch, onDone) => {
+    const newStatus = patch.orderStatus;
+    const changed = newStatus && newStatus !== order.orderStatus;
+    const emailable = EMAILABLE_STATUSES.includes(newStatus);
+
+    if (changed && emailable) {
+      setConfirm({ id: order._id, patch, order, newStatus, onDone });
+      return;
+    }
+    // No email decision needed — save straight away (skip email by default).
+    saveOrder(order._id, { ...patch, sendEmail: false }).then((u) => {
+      if (u && onDone) onDone(u);
+    });
+  };
+
+  // Resolve the confirmation dialog with the admin's choice.
+  const resolveConfirm = async (sendEmail) => {
+    if (!confirm) return;
+    const { id, patch, order, newStatus, onDone } = confirm;
+    setConfirm(null);
+    const updated = await saveOrder(id, { ...patch, sendEmail });
+    if (updated) {
+      if (onDone) onDone(updated);
+      const email = customerEmail(order);
+      // Trust the server's actual outcome (emailQueued) rather than assuming
+      // success — this reflects whether an email was really dispatched.
+      if (sendEmail && updated.emailQueued) {
+        showToast(`${cap(newStatus)} email sent to ${email}.`);
+      } else if (sendEmail && !email) {
+        showToast(`Status updated. No email on file for ${customerLabel(order)}.`);
+      } else if (sendEmail && !updated.emailQueued) {
+        showToast(`Status updated to ${cap(newStatus)}, but the email could not be sent. Check the server email settings.`);
+      } else {
+        showToast(`Status updated to ${cap(newStatus)}. No email sent.`);
+      }
     }
   };
 
@@ -85,7 +159,7 @@ export default function Orders() {
           <span>Filter</span>
           <select className="admin__select" value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="all">All statuses</option>
-            {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
+            {ORDER_STATUSES.map((s) => <option key={s} value={s}>{cap(s)}</option>)}
           </select>
         </label>
         <span className="admin__toolbar-count">{shown.length} orders</span>
@@ -111,8 +185,12 @@ export default function Orders() {
                   <td data-label="Total"><span className="admin__price">{inr(order.totalPrice)}</span></td>
                   <td data-label="Payment"><span className={`admin__badge admin__badge--${order.paymentStatus || "pending"}`}>{order.paymentStatus || "pending"}</span></td>
                   <td data-label="Status">
-                    <select className="admin__select" value={order.orderStatus || "placed"} onChange={(e) => saveOrder(order._id, { orderStatus: e.target.value })}>
-                      {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
+                    <select
+                      className="admin__select"
+                      value={order.orderStatus || "placed"}
+                      onChange={(e) => requestStatusChange(order, { orderStatus: e.target.value })}
+                    >
+                      {ORDER_STATUSES.map((s) => <option key={s} value={s}>{cap(s)}</option>)}
                     </select>
                   </td>
                   <td data-label="Actions">
@@ -133,13 +211,69 @@ export default function Orders() {
           order={active}
           onClose={() => setActive(null)}
           onSave={saveOrder}
+          onStatusChange={requestStatusChange}
         />
+      )}
+
+      {confirm && (
+        <StatusEmailDialog
+          confirm={confirm}
+          email={customerEmail(confirm.order)}
+          customer={customerLabel(confirm.order)}
+          onSend={() => resolveConfirm(true)}
+          onSkip={() => resolveConfirm(false)}
+          onCancel={() => setConfirm(null)}
+        />
+      )}
+
+      {toast && (
+        <div className="admin__toast" role="status">
+          <FaCheck className="admin__toast-icon" />
+          <span>{toast.message}</span>
+        </div>
       )}
     </div>
   );
 }
 
-function OrderModal({ order, onClose, onSave }) {
+/**
+ * Confirmation dialog shown after an emailable status change.
+ * Offers: send the email (primary), change status only / skip email, or cancel.
+ */
+function StatusEmailDialog({ confirm, email, customer, onSend, onSkip, onCancel }) {
+  const { newStatus } = confirm;
+  const description = STATUS_EMAIL_COPY[newStatus] || "notifying them of the update";
+  const hasEmail = Boolean(email);
+
+  return (
+    <div className="admin__modal-overlay" onClick={onCancel}>
+      <div className="admin__confirm" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div className="admin__confirm-icon"><FaEnvelope /></div>
+        <h3 className="admin__confirm-title" id="confirm-title">Notify the customer?</h3>
+        <p className="admin__confirm-text">
+          You're changing this order to <strong>{cap(newStatus)}</strong>. An email will be sent to{" "}
+          {hasEmail ? <strong>{email}</strong> : <span>{customer}</span>} {description}.
+        </p>
+        {!hasEmail && (
+          <p className="admin__confirm-note">
+            No email address is on file for this customer, so nothing will be sent — the status will still update.
+          </p>
+        )}
+        <div className="admin__confirm-actions">
+          <button className="admin__btn admin__btn--primary" onClick={onSend} disabled={!hasEmail}>
+            <FaEnvelope /> Send email &amp; update
+          </button>
+          <button className="admin__btn admin__btn--ghost" onClick={onSkip}>
+            Change status only
+          </button>
+        </div>
+        <button className="admin__confirm-cancel" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function OrderModal({ order, onClose, onSave, onStatusChange }) {
   const [form, setForm] = useState({
     orderStatus: order.orderStatus || "placed",
     paymentStatus: order.paymentStatus || "pending",
@@ -154,12 +288,31 @@ function OrderModal({ order, onClose, onSave }) {
 
   const save = async () => {
     setSaving(true);
-    await onSave(order._id, {
-      ...form,
+    const detailPatch = {
+      paymentStatus: form.paymentStatus,
+      trackingNumber: form.trackingNumber,
       paidAmount: form.paidAmount === "" ? undefined : Number(form.paidAmount),
-    });
-    setSaving(false);
-    onClose();
+      notes: form.notes,
+    };
+    const statusChanged = form.orderStatus !== order.orderStatus;
+
+    if (statusChanged) {
+      // Route the status change (with the other edits attached) through the
+      // email-confirmation flow. The dialog owns the actual save + close.
+      onStatusChange(
+        order,
+        { ...detailPatch, orderStatus: form.orderStatus },
+        () => {
+          setSaving(false);
+          onClose();
+        }
+      );
+    } else {
+      // No status change — persist detail edits directly, no email.
+      await onSave(order._id, { ...detailPatch, sendEmail: false });
+      setSaving(false);
+      onClose();
+    }
   };
 
   return (
@@ -211,13 +364,13 @@ function OrderModal({ order, onClose, onSave }) {
             <div className="admin__form-group">
               <label className="admin__form-label">Order status</label>
               <select className="admin__form-select" value={form.orderStatus} onChange={(e) => setForm({ ...form, orderStatus: e.target.value })}>
-                {ORDER_STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
+                {ORDER_STATUSES.map((s) => <option key={s} value={s}>{cap(s)}</option>)}
               </select>
             </div>
             <div className="admin__form-group">
               <label className="admin__form-label">Payment status</label>
               <select className="admin__form-select" value={form.paymentStatus} onChange={(e) => setForm({ ...form, paymentStatus: e.target.value })}>
-                {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{s[0].toUpperCase() + s.slice(1)}</option>)}
+                {PAYMENT_STATUSES.map((s) => <option key={s} value={s}>{cap(s)}</option>)}
               </select>
             </div>
             <div className="admin__form-group">
