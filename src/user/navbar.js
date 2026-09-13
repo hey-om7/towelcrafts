@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { FaUser, FaBars, FaTimes, FaChevronDown, FaUserCircle, FaBoxOpen, FaMapMarkerAlt } from "react-icons/fa";
+import { FaUser, FaBars, FaTimes, FaChevronDown, FaUserCircle, FaBoxOpen, FaMapMarkerAlt, FaShoppingBag } from "react-icons/fa";
+import { useCart } from "./CartContext";
 import "./navbar.css";
 
 function NavBar() {
@@ -10,6 +11,7 @@ function NavBar() {
   const location = useLocation();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+  const { count } = useCart();
   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
 
   const handleLogout = () => {
@@ -99,6 +101,10 @@ function NavBar() {
 
           {/* Right Actions */}
           <div className="navbar__actions">
+            <Link to="/cart" className="navbar__cart" aria-label={`Cart${count ? `, ${count} item${count === 1 ? "" : "s"}` : ", empty"}`}>
+              <FaShoppingBag />
+              {count > 0 && <span className="navbar__cart-badge">{count > 99 ? "99+" : count}</span>}
+            </Link>
             {userInfo ? (
               <div className="navbar__profile" ref={dropdownRef}>
                 <button
@@ -211,6 +217,15 @@ function NavBar() {
                 </Link>
               </li>
             ))}
+            <li>
+              <Link
+                to="/cart"
+                className={`mobile-menu__link ${isActive("/cart") ? "mobile-menu__link--active" : ""}`}
+                onClick={() => setMobileOpen(false)}
+              >
+                Cart{count > 0 ? ` (${count})` : ""}
+              </Link>
+            </li>
           </ul>
 
           <div className="mobile-menu__footer">

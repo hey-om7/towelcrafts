@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { FaLock, FaMapMarkerAlt, FaShieldAlt, FaArrowLeft, FaPlus, FaCheck } from 'react-icons/fa';
 import { API_URL } from '../config';
+import { useCart } from './CartContext';
 import './checkout.css';
 
 const EMPTY_ADDRESS = {
@@ -21,6 +22,9 @@ const EMPTY_ADDRESS = {
 export default function Checkout() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { items: cartItems, clearCart } = useCart();
+
+  const fromCart = !!state?.fromCart;
 
   const [addresses, setAddresses] = useState([]);
   const [selectedId, setSelectedId] = useState(null);
@@ -74,15 +78,44 @@ export default function Checkout() {
   }, [navigate]);
 
   useEffect(() => {
-    if (!state || !state.product) {
-      navigate('/categories');
+    // Allow either a single "Buy Now" product or a cart checkout. If neither
+    // is present (or the cart is empty), there's nothing to check out.
+    const hasSingle = !!state?.product;
+    const hasCart = fromCart && cartItems.length > 0;
+    if (!hasSingle && !hasCart) {
+      navigate(fromCart ? '/cart' : '/categories');
       return;
     }
     loadAddresses();
-  }, [state, navigate, loadAddresses]);
+  }, [state, fromCart, cartItems.length, navigate, loadAddresses]);
 
-  const product = state?.product;
-  const subtotal = product ? product.price * quantity : 0;
+  // Unified list of line items for rendering + order payload.
+  // Buy Now: a single line with the editable `quantity`.
+  // Cart: one line per cart item, using each item's stored quantity.
+  const lineItems = fromCart
+    ? cartItems.map((it) => ({
+        productId: it.id,
+        title: it.title,
+        image: it.image,
+        category: it.category,
+        price: it.price,
+        quantity: it.quantity,
+      }))
+    : state?.product
+    ? [
+        {
+          productId: state.product._id,
+          title: state.product.title,
+          image: state.product.image,
+          category: state.product.category,
+          price: state.product.price,
+          quantity,
+        },
+      ]
+    : [];
+
+  const totalItems = lineItems.reduce((n, l) => n + l.quantity, 0);
+  const subtotal = lineItems.reduce((sum, l) => sum + l.price * l.quantity, 0);
   const shipping = subtotal >= 999 ? 0 : 99;
   const total = subtotal + shipping;
 
@@ -135,12 +168,15 @@ export default function Checkout() {
       setError('Please select or add a delivery address.');
       return;
     }
+    if (lineItems.length === 0) {
+      setError('Your order is empty.');
+      return;
+    }
     setPlacing(true);
     try {
       const userInfo = getAuth();
       const orderData = {
-        productId: product._id,
-        quantity,
+        items: lineItems.map((l) => ({ productId: l.productId, quantity: l.quantity })),
         totalPrice: total,
         paymentMethod,
         addressId: selectedId,
@@ -156,6 +192,7 @@ export default function Checkout() {
       });
 
       if (response.ok) {
+        if (fromCart) clearCart();
         navigate('/order-completed');
       } else {
         const errorData = await response.json();
@@ -169,7 +206,7 @@ export default function Checkout() {
     }
   };
 
-  if (!product) return null;
+  if (lineItems.length === 0) return null;
 
   return (
     <div className="checkout">
@@ -185,24 +222,39 @@ export default function Checkout() {
         <div className="checkout__grid">
           {/* LEFT: Details */}
           <div className="checkout__main">
-            {/* Product */}
+            {/* Product(s) */}
             <section className="checkout__section">
-              <h2 className="checkout__section-title">Your Item</h2>
-              <div className="checkout__product">
-                <div className="checkout__product-image">
-                  <img src={product.image} alt={product.title} />
-                </div>
-                <div className="checkout__product-info">
-                  <span className="checkout__product-category">{product.category}</span>
-                  <h3 className="checkout__product-name">{product.title}</h3>
-                  <span className="checkout__product-price">₹{product.price?.toLocaleString()}</span>
-                </div>
-                <div className="checkout__quantity">
-                  <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="checkout__qty-btn" aria-label="Decrease quantity">−</button>
-                  <span className="checkout__qty-value">{quantity}</span>
-                  <button onClick={() => setQuantity((q) => q + 1)} className="checkout__qty-btn" aria-label="Increase quantity">+</button>
-                </div>
+              <div className="checkout__section-head">
+                <h2 className="checkout__section-title">
+                  {lineItems.length > 1 ? `Your Items (${lineItems.length})` : 'Your Item'}
+                </h2>
+                {fromCart && (
+                  <Link to="/cart" className="checkout__add-btn">Edit cart</Link>
+                )}
               </div>
+
+              {lineItems.map((line) => (
+                <div className="checkout__product" key={line.productId}>
+                  <div className="checkout__product-image">
+                    <img src={line.image} alt={line.title} />
+                  </div>
+                  <div className="checkout__product-info">
+                    <span className="checkout__product-category">{line.category}</span>
+                    <h3 className="checkout__product-name">{line.title}</h3>
+                    <span className="checkout__product-price">₹{line.price?.toLocaleString()}</span>
+                  </div>
+
+                  {fromCart ? (
+                    <div className="checkout__product-qty-static">Qty {line.quantity}</div>
+                  ) : (
+                    <div className="checkout__quantity">
+                      <button onClick={() => setQuantity((q) => Math.max(1, q - 1))} className="checkout__qty-btn" aria-label="Decrease quantity">−</button>
+                      <span className="checkout__qty-value">{line.quantity}</span>
+                      <button onClick={() => setQuantity((q) => q + 1)} className="checkout__qty-btn" aria-label="Increase quantity">+</button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </section>
 
             {/* Shipping address selection */}
@@ -325,7 +377,7 @@ export default function Checkout() {
               <h2 className="checkout__summary-title">Order Summary</h2>
 
               <div className="checkout__summary-row">
-                <span>Subtotal ({quantity} {quantity === 1 ? 'item' : 'items'})</span>
+                <span>Subtotal ({totalItems} {totalItems === 1 ? 'item' : 'items'})</span>
                 <span>₹{subtotal.toLocaleString()}</span>
               </div>
               <div className="checkout__summary-row">

@@ -12,20 +12,64 @@ const { orderConfirmationEmail } = require('../utils/emailTemplates');
 // @access  Private
 router.post('/', protect, async (req, res, next) => {
   try {
-    const { productId, quantity, totalPrice, paymentMethod, addressId } = req.body;
+    const { productId, quantity, totalPrice, paymentMethod, addressId, items } = req.body;
 
-    if (!productId || !quantity || !totalPrice) {
-      return res.status(400).json({ message: 'Product ID, quantity, and total price are required' });
+    // Normalize the request into a list of { productId, quantity } lines.
+    // Supports two shapes:
+    //   1. Multi-item cart:  { items: [{ productId, quantity }, ...] }
+    //   2. Legacy single:    { productId, quantity }
+    let requestedLines;
+    if (Array.isArray(items) && items.length > 0) {
+      requestedLines = items
+        .map((it) => ({
+          productId: it.productId ?? it.product,
+          quantity: Math.max(1, parseInt(it.quantity, 10) || 1),
+        }))
+        .filter((it) => it.productId != null);
+    } else if (productId) {
+      requestedLines = [{ productId, quantity: Math.max(1, parseInt(quantity, 10) || 1) }];
+    } else {
+      return res.status(400).json({ message: 'No items provided for the order' });
     }
 
-    // Fetch the product details
-    const product = await Product.findById(productId);
-    if (!product) {
-      return res.status(404).json({ message: 'Product not found' });
+    if (requestedLines.length === 0) {
+      return res.status(400).json({ message: 'No valid items provided for the order' });
     }
 
-    if (!product.inStock || product.stockQuantity < quantity) {
-      return res.status(400).json({ message: 'Product is out of stock' });
+    // Fetch all referenced products in one query.
+    const productIds = [...new Set(requestedLines.map((l) => l.productId))];
+    const products = await Product.find({ _id: { $in: productIds } });
+    const productMap = new Map(products.map((p) => [String(p._id), p]));
+
+    // Validate every line: existence + stock. Aggregate quantities per product
+    // so a product added twice is checked against total requested stock.
+    const perProductQty = new Map();
+    for (const line of requestedLines) {
+      perProductQty.set(
+        String(line.productId),
+        (perProductQty.get(String(line.productId)) || 0) + line.quantity
+      );
+    }
+
+    const orderItems = [];
+    let subtotal = 0;
+    for (const line of requestedLines) {
+      const product = productMap.get(String(line.productId));
+      if (!product) {
+        return res.status(404).json({ message: `Product not found (${line.productId})` });
+      }
+      const totalWanted = perProductQty.get(String(product._id));
+      if (!product.inStock || product.stockQuantity < totalWanted) {
+        return res.status(400).json({ message: `"${product.title}" is out of stock` });
+      }
+      orderItems.push({
+        product: product._id,
+        title: product.title,
+        image: product.image,
+        price: product.price,
+        quantity: line.quantity,
+      });
+      subtotal += product.price * line.quantity;
     }
 
     // Resolve the shipping address: use the one chosen at checkout if provided
@@ -46,19 +90,16 @@ router.post('/', protect, async (req, res, next) => {
       return res.status(400).json({ message: 'Please add a shipping address before placing an order' });
     }
 
+    // Trust the server-computed subtotal; use client total only if it is
+    // consistent, otherwise fall back to the computed value.
+    const finalTotal = Number.isFinite(totalPrice) && totalPrice >= subtotal ? totalPrice : subtotal;
+
     const order = new Order({
       user: req.user._id,
-      productId: product._id,
-      quantity,
-      orderItems: [
-        {
-          product: product._id,
-          title: product.title,
-          image: product.image,
-          price: product.price,
-          quantity,
-        },
-      ],
+      // Keep legacy single-product fields populated for single-item orders.
+      productId: orderItems.length === 1 ? orderItems[0].product : undefined,
+      quantity: orderItems.length === 1 ? orderItems[0].quantity : undefined,
+      orderItems,
       shippingAddress: {
         addressLine: address.addressLine,
         city: address.city,
@@ -67,20 +108,27 @@ router.post('/', protect, async (req, res, next) => {
         country: address.country,
       },
       paymentMethod: paymentMethod || 'cod',
-      subtotal: product.price * quantity,
-      totalPrice,
+      subtotal,
+      totalPrice: finalTotal,
       orderStatus: 'placed',
       paymentStatus: 'pending',
     });
 
     const createdOrder = await order.save();
 
-    // Decrease stock
-    product.stockQuantity -= quantity;
-    if (product.stockQuantity <= 0) {
-      product.inStock = false;
-    }
-    await product.save();
+    // Decrease stock for each distinct product by its aggregate quantity.
+    await Promise.all(
+      [...perProductQty.entries()].map(async ([pid, qty]) => {
+        const product = productMap.get(pid);
+        if (!product) return;
+        product.stockQuantity -= qty;
+        if (product.stockQuantity <= 0) {
+          product.stockQuantity = 0;
+          product.inStock = false;
+        }
+        await product.save();
+      })
+    );
 
     // Send order-confirmation email (fire-and-forget — never blocks or
     // fails the order response if email is unconfigured or SMTP errors).

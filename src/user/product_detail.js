@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaUndo, FaChevronLeft, FaChevronRight } from "react-icons/fa";
+import { FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaUndo, FaChevronLeft, FaChevronRight, FaShoppingBag, FaCheck } from "react-icons/fa";
 import { API_URL } from "../config";
 import ProductReviews from "./ProductReviews";
+import { useCart } from "./CartContext";
 import "./product_detail.css";
 
 function ProductDetail() {
   const { productId, categoryId } = useParams();
   const navigate = useNavigate();
+  const { addItem } = useCart();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [currentImage, setCurrentImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
+  const [justAdded, setJustAdded] = useState(false);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -40,6 +43,13 @@ function ProductDetail() {
     }
 
     navigate("/checkout", { state: { product, quantity } });
+  };
+
+  const handleAddToCart = () => {
+    addItem(product, quantity);
+    setJustAdded(true);
+    window.clearTimeout(handleAddToCart._t);
+    handleAddToCart._t = window.setTimeout(() => setJustAdded(false), 1800);
   };
 
   if (loading) {
@@ -218,6 +228,21 @@ function ProductDetail() {
                 +
               </button>
             </div>
+            <button
+              className={`pd-info__cart-btn ${justAdded ? "pd-info__cart-btn--added" : ""}`}
+              onClick={handleAddToCart}
+              aria-live="polite"
+            >
+              {justAdded ? (
+                <>
+                  <FaCheck aria-hidden="true" /> Added to Cart
+                </>
+              ) : (
+                <>
+                  <FaShoppingBag aria-hidden="true" /> Add to Cart
+                </>
+              )}
+            </button>
             <button className="pd-info__buy-btn" onClick={handleBuyNow}>
               Buy Now — ₹{(product.price * quantity).toLocaleString()}
             </button>

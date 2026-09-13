@@ -92,6 +92,20 @@
   gap: var(--space-4);
 }
 
+.checkout__product + .checkout__product {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border-light);
+}
+
+.checkout__product-qty-static {
+  flex-shrink: 0;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
 .checkout__product-image {
   width: 88px;
   height: 88px;

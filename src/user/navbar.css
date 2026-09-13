@@ -190,6 +190,53 @@
 .navbar--transparent .navbar__login-btn { color: var(--color-white); }
 .navbar--transparent .navbar__login-btn::after { background: var(--color-white); }
 
+/* ── Cart ───────────────────────────────── */
+.navbar__cart {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  color: var(--color-primary-dark);
+  border-radius: var(--radius-full);
+  transition: color var(--transition-fast), background var(--transition-fast);
+}
+
+.navbar__cart:hover {
+  color: var(--color-accent-dark);
+  background: var(--color-secondary);
+}
+
+.navbar--transparent .navbar__cart { color: var(--color-white); }
+.navbar--transparent .navbar__cart:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--color-white);
+}
+
+.navbar__cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-accent-dark);
+  color: var(--color-white);
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--color-bg-light);
+}
+
+.navbar--transparent .navbar__cart-badge {
+  border-color: transparent;
+}
+
 /* ── Profile ────────────────────────────── */
 .navbar__profile { position: relative; }
 
