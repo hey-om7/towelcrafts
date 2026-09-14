@@ -1,0 +1,56 @@
+/* Blur-up progressive image
+   The wrapper fills its parent (which owns aspect-ratio / radius / overflow).
+   Two stacked layers: a blurred low-quality placeholder and the full image. */
+
+.pimg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pimg--empty {
+  position: absolute;
+  background: var(--color-bg-warm);
+}
+
+.pimg__lqip,
+.pimg__full {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Low-quality placeholder: blurred, slightly upscaled so the blur doesn't
+   reveal transparent edges. Fades out once the full image is ready. */
+.pimg__lqip {
+  filter: blur(14px);
+  transform: scale(1.08);
+  opacity: 1;
+  transition: opacity 0.5s var(--ease-out, ease-out);
+  will-change: opacity;
+}
+
+.pimg__lqip--hidden {
+  opacity: 0;
+}
+
+/* Full image: starts transparent, fades in on load. */
+.pimg__full {
+  opacity: 0;
+  transition: opacity 0.5s var(--ease-out, ease-out);
+  will-change: opacity;
+}
+
+.pimg__full--loaded {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pimg__lqip,
+  .pimg__full {
+    transition: none;
+  }
+}
