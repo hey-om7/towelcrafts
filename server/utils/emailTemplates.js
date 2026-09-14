@@ -37,6 +37,53 @@ const SANS = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica,
 
 const inr = (n) => '₹' + Number(n || 0).toLocaleString('en-IN');
 
+/**
+ * Brand logo, embedded directly in each email as a CID (Content-ID)
+ * attachment.
+ *
+ * Rather than linking to a hosted URL — which many mail clients block or fail
+ * to load — the logo bytes travel with the message and the HTML references
+ * them via `cid:`. This renders reliably across Gmail, Outlook, Apple Mail,
+ * etc. without any external request. `getLogoAttachment()` returns the
+ * nodemailer attachment descriptor that every template ships with its output.
+ */
+const path = require('path');
+
+// Stable Content-ID referenced by the <img> tags below.
+const LOGO_CID = 'towelcrafts-logo';
+const LOGO_PATH = path.join(__dirname, '..', 'assets', 'email', 'towelcrafts-logo.png');
+
+/**
+ * The nodemailer attachment descriptor for the embedded logo. Spread into the
+ * `attachments` array so the mailer can inline it via its Content-ID.
+ */
+function getLogoAttachment() {
+  return {
+    filename: 'towelcrafts-logo.png',
+    path: LOGO_PATH,
+    cid: LOGO_CID,
+    contentType: 'image/png',
+  };
+}
+
+/**
+ * Renders the header brand lockup: the embedded logo mark above the uppercase
+ * letterspaced wordmark. Used inside every email's dark header band. The logo
+ * is referenced via `cid:` and always accompanied by the wordmark, so the
+ * brand still reads even if a client suppresses inline images.
+ *
+ * @param {string} [eyebrow]  Wordmark text (e.g. 'TowelCrafts' or
+ *                            'TowelCrafts · Security'). The logo's alt text is
+ *                            always the plain brand name.
+ */
+function brandLockup(eyebrow = 'TowelCrafts') {
+  const mark = `<img src="cid:${LOGO_CID}" width="52" height="52" alt="TowelCrafts"
+           style="display:block;margin:0 auto 14px;width:52px;height:52px;border:0;outline:none;text-decoration:none;">`;
+  return `${mark}<div style="font-family:${SANS};font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${C.brassLight};margin-bottom:10px;">
+                ${esc(eyebrow)}
+              </div>`;
+}
+
 function esc(v) {
   return String(v == null ? '' : v)
     .replace(/&/g, '&amp;')
@@ -164,9 +211,7 @@ function orderConfirmationEmail({ customerName, order, storeUrl }) {
           <!-- Header band -->
           <tr>
             <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
-              <div style="font-family:${SANS};font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${C.brassLight};margin-bottom:10px;">
-                TowelCrafts
-              </div>
+              ${brandLockup('TowelCrafts')}
               <div style="font-family:${SERIF};font-size:30px;font-weight:400;color:${C.white};line-height:1.15;">
                 Order Confirmed
               </div>
@@ -313,7 +358,7 @@ function orderConfirmationEmail({ customerName, order, storeUrl }) {
     `© ${new Date().getFullYear()} TowelCrafts`,
   ].filter((l) => l !== undefined);
 
-  return { subject, html, text: textLines.join('\n') };
+  return { subject, html, text: textLines.join('\n'), attachments: [getLogoAttachment()] };
 }
 
 /**
@@ -472,9 +517,7 @@ function orderStatusEmail({ customerName, status, order, storeUrl }) {
           <!-- Header band -->
           <tr>
             <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
-              <div style="font-family:${SANS};font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${C.brassLight};margin-bottom:10px;">
-                TowelCrafts
-              </div>
+              ${brandLockup('TowelCrafts')}
               <div style="font-family:${SERIF};font-size:30px;font-weight:400;color:${C.white};line-height:1.15;">
                 ${esc(content.header)}
               </div>
@@ -591,7 +634,7 @@ function orderStatusEmail({ customerName, status, order, storeUrl }) {
     `© ${new Date().getFullYear()} TowelCrafts`,
   ].filter((l) => l !== '');
 
-  return { subject, html, text: textLines.join('\n') };
+  return { subject, html, text: textLines.join('\n'), attachments: [getLogoAttachment()] };
 }
 
 // Statuses that trigger a customer-facing email.
@@ -652,9 +695,7 @@ function adminRoleOtpEmail({
           <!-- Header band -->
           <tr>
             <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
-              <div style="font-family:${SANS};font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${C.brassLight};margin-bottom:10px;">
-                TowelCrafts · Security
-              </div>
+              ${brandLockup('TowelCrafts · Security')}
               <div style="font-family:${SERIF};font-size:28px;font-weight:400;color:${C.white};line-height:1.15;">
                 Admin Access Approval
               </div>
@@ -739,7 +780,7 @@ function adminRoleOtpEmail({
     .filter((l) => l !== null && l !== undefined)
     .join('\n');
 
-  return { subject, html, text };
+  return { subject, html, text, attachments: [getLogoAttachment()] };
 }
 
-module.exports = { orderConfirmationEmail, orderStatusEmail, adminRoleOtpEmail, EMAILABLE_STATUSES };
+module.exports = { orderConfirmationEmail, orderStatusEmail, adminRoleOtpEmail, EMAILABLE_STATUSES, getLogoAttachment };

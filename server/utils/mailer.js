@@ -45,8 +45,10 @@ function getTransporter() {
  * @param {string} opts.subject Email subject
  * @param {string} opts.html    HTML body
  * @param {string} [opts.text]  Optional plain-text fallback
+ * @param {Array}  [opts.attachments] Optional nodemailer attachments (e.g. the
+ *                                    inline CID logo shipped by the templates)
  */
-async function sendMail({ to, subject, html, text }) {
+async function sendMail({ to, subject, html, text, attachments }) {
   const tx = getTransporter();
 
   if (!tx) {
@@ -74,6 +76,7 @@ async function sendMail({ to, subject, html, text }) {
       subject,
       text,
       html,
+      ...(attachments && attachments.length ? { attachments } : {}),
     });
 
     return { sent: true, messageId: info.messageId };

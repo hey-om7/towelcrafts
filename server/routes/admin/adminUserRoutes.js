@@ -176,7 +176,7 @@ router.post('/:id/role-otp/request', otpRequestLimiter, async (req, res, next) =
       expiresAt,
     });
 
-    const { subject, html, text } = adminRoleOtpEmail({
+    const { subject, html, text, attachments } = adminRoleOtpEmail({
       code,
       targetName: user.name,
       targetEmail: user.email,
@@ -185,7 +185,7 @@ router.post('/:id/role-otp/request', otpRequestLimiter, async (req, res, next) =
       expiresMinutes: OTP_TTL_MINUTES,
     });
 
-    const result = await sendMail({ to: approverEmail(), subject, html, text });
+    const result = await sendMail({ to: approverEmail(), subject, html, text, attachments });
 
     if (!result.sent) {
       await AdminOtp.deleteMany({ targetUser: user._id, consumed: false });

@@ -125,6 +125,7 @@ router.put('/:id/status', async (req, res, next) => {
           subject: built.subject,
           html: built.html,
           text: built.text,
+          attachments: built.attachments,
         });
         emailQueued = Boolean(result && result.sent);
         if (!emailQueued) {

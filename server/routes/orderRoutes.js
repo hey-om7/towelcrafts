@@ -137,11 +137,11 @@ router.post('/', protect, async (req, res, next) => {
     // Send order-confirmation email (fire-and-forget — never blocks or
     // fails the order response if email is unconfigured or SMTP errors).
     if (req.user.email) {
-      const { subject, html, text } = orderConfirmationEmail({
+      const { subject, html, text, attachments } = orderConfirmationEmail({
         customerName: req.user.name,
         order: createdOrder.toObject(),
       });
-      sendMail({ to: req.user.email, subject, html, text }).catch((err) =>
+      sendMail({ to: req.user.email, subject, html, text, attachments }).catch((err) =>
         console.error('[orders] confirmation email error:', err.message)
       );
     }
