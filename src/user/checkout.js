@@ -3,6 +3,7 @@ import { useLocation, useNavigate, Link } from 'react-router-dom';
 import { FaLock, FaMapMarkerAlt, FaShieldAlt, FaArrowLeft, FaPlus, FaCheck } from 'react-icons/fa';
 import { API_URL, imageUrl } from '../config';
 import { useCart } from './CartContext';
+import { loadRazorpay } from './razorpay';
 import './checkout.css';
 
 const EMPTY_ADDRESS = {
@@ -32,6 +33,7 @@ export default function Checkout() {
   const [placing, setPlacing] = useState(false);
   const [quantity, setQuantity] = useState(state?.quantity || 1);
   const [paymentMethod, setPaymentMethod] = useState('cod');
+  const [onlineEnabled, setOnlineEnabled] = useState(false);
   const [error, setError] = useState(null);
 
   // Inline "add address" form
@@ -88,6 +90,30 @@ export default function Checkout() {
     }
     loadAddresses();
   }, [state, fromCart, cartItems.length, navigate, loadAddresses]);
+
+  // Discover whether online payment (Razorpay) is configured on the server.
+  useEffect(() => {
+    const userInfo = getAuth();
+    if (!userInfo || !userInfo.token) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/orders/payment/config`, {
+          headers: { Authorization: `Bearer ${userInfo.token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (!cancelled) setOnlineEnabled(Boolean(data.enabled));
+        }
+      } catch {
+        /* leave online disabled on error */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Unified list of line items for rendering + order payload.
   // Buy Now: a single line with the editable `quantity`.
@@ -162,6 +188,132 @@ export default function Checkout() {
     }
   };
 
+  const finishOrder = () => {
+    if (fromCart) clearCart();
+    navigate('/order-completed');
+  };
+
+  // COD (and other non-online methods): create the order directly.
+  const placeCodOrder = async (userInfo) => {
+    const orderData = {
+      items: lineItems.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+      totalPrice: total,
+      paymentMethod,
+      addressId: selectedId,
+    };
+
+    const response = await fetch(`${API_URL}/api/orders`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${userInfo.token}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    if (response.ok) {
+      finishOrder();
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      setError(errorData.message || 'Failed to place order');
+      setPlacing(false);
+    }
+  };
+
+  // Online payment: create a pending order + Razorpay order, open Checkout,
+  // then verify the signature on the server before confirming.
+  const placeOnlineOrder = async (userInfo) => {
+    const authHeaders = {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${userInfo.token}`,
+    };
+
+    // 1. Load the Checkout script + create the Razorpay order in parallel.
+    let Razorpay;
+    let init;
+    try {
+      const [rzpCtor, initRes] = await Promise.all([
+        loadRazorpay(),
+        fetch(`${API_URL}/api/orders/razorpay`, {
+          method: 'POST',
+          headers: authHeaders,
+          body: JSON.stringify({
+            items: lineItems.map((l) => ({ productId: l.productId, quantity: l.quantity })),
+            totalPrice: total,
+            addressId: selectedId,
+          }),
+        }),
+      ]);
+      Razorpay = rzpCtor;
+      if (!initRes.ok) {
+        const data = await initRes.json().catch(() => ({}));
+        setError(data.message || 'Could not initiate payment.');
+        setPlacing(false);
+        return;
+      }
+      init = await initRes.json();
+    } catch (err) {
+      console.error('Error initiating payment:', err);
+      setError('Could not start online payment. Please try again or choose Cash on Delivery.');
+      setPlacing(false);
+      return;
+    }
+
+    // 2. Open the Razorpay Checkout modal.
+    const rzp = new Razorpay({
+      key: init.keyId,
+      amount: init.amount,
+      currency: init.currency,
+      name: 'TowelCrafts',
+      description: `Order ${init.orderNumber || ''}`.trim(),
+      order_id: init.razorpayOrderId,
+      prefill: {
+        name: userInfo.name || '',
+        email: userInfo.email || '',
+      },
+      theme: { color: '#33402B' },
+      handler: async (response) => {
+        // 3. Verify the payment on the server, then confirm.
+        try {
+          const verifyRes = await fetch(`${API_URL}/api/orders/razorpay/verify`, {
+            method: 'POST',
+            headers: authHeaders,
+            body: JSON.stringify({
+              orderId: init.orderId,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+            }),
+          });
+          if (verifyRes.ok) {
+            finishOrder();
+          } else {
+            const data = await verifyRes.json().catch(() => ({}));
+            setError(data.message || 'Payment could not be verified. If you were charged, contact support.');
+            setPlacing(false);
+          }
+        } catch (err) {
+          console.error('Error verifying payment:', err);
+          setError('Payment verification failed. If you were charged, contact support.');
+          setPlacing(false);
+        }
+      },
+      modal: {
+        ondismiss: () => {
+          // User closed the modal without paying — re-enable the button.
+          setPlacing(false);
+        },
+      },
+    });
+
+    rzp.on('payment.failed', (resp) => {
+      setError(resp?.error?.description || 'Payment failed. Please try again.');
+      setPlacing(false);
+    });
+
+    rzp.open();
+  };
+
   const handlePlaceOrder = async () => {
     setError(null);
     if (!selectedId) {
@@ -175,29 +327,10 @@ export default function Checkout() {
     setPlacing(true);
     try {
       const userInfo = getAuth();
-      const orderData = {
-        items: lineItems.map((l) => ({ productId: l.productId, quantity: l.quantity })),
-        totalPrice: total,
-        paymentMethod,
-        addressId: selectedId,
-      };
-
-      const response = await fetch(`${API_URL}/api/orders`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${userInfo.token}`,
-        },
-        body: JSON.stringify(orderData),
-      });
-
-      if (response.ok) {
-        if (fromCart) clearCart();
-        navigate('/order-completed');
+      if (paymentMethod === 'online') {
+        await placeOnlineOrder(userInfo);
       } else {
-        const errorData = await response.json();
-        setError(errorData.message || 'Failed to place order');
-        setPlacing(false);
+        await placeCodOrder(userInfo);
       }
     } catch (err) {
       console.error('Error placing order:', err);
@@ -360,13 +493,15 @@ export default function Checkout() {
                     <span>Pay when your order arrives</span>
                   </div>
                 </label>
-                <label className={`checkout__payment-option ${paymentMethod === 'upi' ? 'checkout__payment-option--active' : ''}`}>
-                  <input type="radio" name="payment" value="upi" checked={paymentMethod === 'upi'} onChange={(e) => setPaymentMethod(e.target.value)} />
-                  <div>
-                    <strong>UPI / Online</strong>
-                    <span>Pay securely online</span>
-                  </div>
-                </label>
+                {onlineEnabled && (
+                  <label className={`checkout__payment-option ${paymentMethod === 'online' ? 'checkout__payment-option--active' : ''}`}>
+                    <input type="radio" name="payment" value="online" checked={paymentMethod === 'online'} onChange={(e) => setPaymentMethod(e.target.value)} />
+                    <div>
+                      <strong>Pay Online</strong>
+                      <span>UPI, cards, netbanking &amp; wallets via Razorpay</span>
+                    </div>
+                  </label>
+                )}
               </div>
             </section>
           </div>
@@ -406,11 +541,11 @@ export default function Checkout() {
               >
                 {placing ? (
                   <span className="checkout__btn-loading">
-                    <span className="checkout__spinner" /> Placing Order…
+                    <span className="checkout__spinner" /> {paymentMethod === 'online' ? 'Processing…' : 'Placing Order…'}
                   </span>
                 ) : (
                   <>
-                    <FaLock /> Place Order
+                    <FaLock /> {paymentMethod === 'online' ? `Pay ₹${total.toLocaleString()}` : 'Place Order'}
                   </>
                 )}
               </button>

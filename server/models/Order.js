@@ -51,13 +51,26 @@ const orderSchema = mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['cod', 'online', 'upi', 'card'],
+      enum: ['cod', 'online', 'upi', 'card', 'razorpay'],
       default: 'cod',
     },
     paymentStatus: {
       type: String,
       enum: ['pending', 'partial', 'completed', 'refunded', 'failed'],
       default: 'pending',
+    },
+    // Razorpay payment references (populated for online payments).
+    razorpayOrderId: {
+      type: String,
+      trim: true,
+    },
+    razorpayPaymentId: {
+      type: String,
+      trim: true,
+    },
+    razorpaySignature: {
+      type: String,
+      trim: true,
     },
     paidAmount: {
       type: Number,
@@ -127,6 +140,7 @@ const orderSchema = mongoose.Schema(
 orderSchema.index({ user: 1, createdAt: -1 });
 orderSchema.index({ orderStatus: 1 });
 orderSchema.index({ paymentStatus: 1 });
+orderSchema.index({ razorpayOrderId: 1 });
 orderSchema.index({ createdAt: -1 });
 
 // Generate order number before saving
