@@ -597,4 +597,149 @@ function orderStatusEmail({ customerName, status, order, storeUrl }) {
 // Statuses that trigger a customer-facing email.
 const EMAILABLE_STATUSES = Object.keys(STATUS_CONTENT);
 
-module.exports = { orderConfirmationEmail, orderStatusEmail, EMAILABLE_STATUSES };
+/**
+ * Build the admin-role approval OTP email (subject + html + text).
+ *
+ * Sent to the fixed approver whenever an admin attempts to promote a user to
+ * a privileged role. The recipient enters the code back in the admin panel to
+ * authorize the change.
+ *
+ * @param {Object} p
+ * @param {string} p.code            The one-time code
+ * @param {string} p.targetName      Name of the user being promoted
+ * @param {string} p.targetEmail     Email of the user being promoted
+ * @param {string} p.requestedRole   'admin' | 'superadmin'
+ * @param {string} [p.requestedByName]  Admin who initiated the request
+ * @param {number} [p.expiresMinutes]   Minutes until the code expires
+ */
+function adminRoleOtpEmail({
+  code,
+  targetName,
+  targetEmail,
+  requestedRole,
+  requestedByName,
+  expiresMinutes = 10,
+}) {
+  const roleLabel = requestedRole === 'superadmin' ? 'Super Admin' : 'Admin';
+  const subject = `Approve admin access · code ${code}`;
+
+  const metaRow = (label, value) => `
+    <tr>
+      <td style="padding:7px 0;font-family:${SANS};font-size:13px;color:${C.textLight};width:42%;">${esc(label)}</td>
+      <td style="padding:7px 0;font-family:${SANS};font-size:14px;color:${C.ink};font-weight:600;">${esc(value)}</td>
+    </tr>`;
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <title>${esc(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:${C.paperWarm};-webkit-font-smoothing:antialiased;">
+  <!-- Preheader (hidden preview text) -->
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:${C.paperWarm};">
+    Your one-time code to approve ${esc(roleLabel)} access for ${esc(targetName || targetEmail)} is ${esc(code)}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paperWarm};padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background-color:${C.card};border:1px solid ${C.border};border-radius:4px;overflow:hidden;">
+
+          <!-- Header band -->
+          <tr>
+            <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
+              <div style="font-family:${SANS};font-size:11px;letter-spacing:0.32em;text-transform:uppercase;color:${C.brassLight};margin-bottom:10px;">
+                TowelCrafts · Security
+              </div>
+              <div style="font-family:${SERIF};font-size:28px;font-weight:400;color:${C.white};line-height:1.15;">
+                Admin Access Approval
+              </div>
+              <div style="width:44px;height:2px;background-color:${C.brass};margin:16px auto 0;"></div>
+            </td>
+          </tr>
+
+          <!-- Intro -->
+          <tr>
+            <td style="padding:34px 40px 6px;">
+              <p style="margin:0;font-family:${SANS};font-size:15px;line-height:1.65;color:${C.textSecondary};">
+                A request has been made to grant <strong style="color:${C.ink};">${esc(roleLabel)}</strong> access.
+                Use the one-time code below in the admin panel to approve it. If you did not
+                expect this, do not share the code — the change cannot happen without it.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Code -->
+          <tr>
+            <td style="padding:24px 40px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paper};border:1px solid ${C.border};border-radius:4px;">
+                <tr>
+                  <td style="padding:22px;text-align:center;">
+                    <div style="font-family:${SANS};font-size:11px;letter-spacing:0.28em;text-transform:uppercase;color:${C.textLight};margin-bottom:10px;">
+                      Your code
+                    </div>
+                    <div style="font-family:${SERIF};font-size:38px;font-weight:700;letter-spacing:0.18em;color:${C.forest};">
+                      ${esc(code)}
+                    </div>
+                    <div style="font-family:${SANS};font-size:13px;color:${C.textLight};margin-top:10px;">
+                      Expires in ${esc(expiresMinutes)} minutes
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Request details -->
+          <tr>
+            <td style="padding:20px 40px 8px;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                ${metaRow('User to promote', targetName || '—')}
+                ${metaRow('Email', targetEmail || '—')}
+                ${metaRow('Role requested', roleLabel)}
+                ${requestedByName ? metaRow('Requested by', requestedByName) : ''}
+              </table>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding:24px 40px 34px;border-top:1px solid ${C.borderLight};">
+              <p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.6;color:${C.textMuted};">
+                This is an automated security message from TowelCrafts. The code is valid for a single approval only.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const text = [
+    'TowelCrafts — Admin Access Approval',
+    '',
+    `A request has been made to grant ${roleLabel} access.`,
+    `Your one-time code: ${code}`,
+    `Expires in ${expiresMinutes} minutes.`,
+    '',
+    `User to promote: ${targetName || '—'}`,
+    `Email: ${targetEmail || '—'}`,
+    `Role requested: ${roleLabel}`,
+    requestedByName ? `Requested by: ${requestedByName}` : '',
+    '',
+    'If you did not expect this, do not share the code — the change cannot happen without it.',
+  ]
+    .filter((l) => l !== null && l !== undefined)
+    .join('\n');
+
+  return { subject, html, text };
+}
+
+module.exports = { orderConfirmationEmail, orderStatusEmail, adminRoleOtpEmail, EMAILABLE_STATUSES };

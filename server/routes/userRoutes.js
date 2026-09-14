@@ -1,10 +1,59 @@
 const express = require('express');
 const router = express.Router();
+const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const Address = require('../models/Address');
+const AdminOtp = require('../models/AdminOtp');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const { protect, admin } = require('../middleware/authMiddleware');
+const { sendMail } = require('../utils/mailer');
+const { adminRoleOtpEmail } = require('../utils/emailTemplates');
+
+const OTP_TTL_MINUTES = 10;
+const OTP_MAX_ATTEMPTS = 5;
+const PRIVILEGED_ROLES = ['admin', 'superadmin'];
+
+// Throttle OTP requests to blunt email-spam / enumeration: max 5 requests per
+// 15 minutes per IP. Applied only to the request endpoint below.
+const otpRequestLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  message: { message: 'Too many approval requests. Please try again in a few minutes.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+/** Fixed approver address that must confirm any admin promotion. */
+function approverEmail() {
+  return process.env.ADMIN_APPROVER_EMAIL || 'om.ambarkar@gmail.com';
+}
+
+/**
+ * Determine whether a requested change would GRANT admin privileges to a user
+ * who does not already hold them. Only these transitions require OTP approval;
+ * demotions and benign edits (name/phone/isActive) do not.
+ *
+ * @returns {string|null} the privileged role being granted, or null if none
+ */
+function escalationRole(currentUser, body) {
+  const alreadyPrivileged =
+    currentUser.role === 'admin' ||
+    currentUser.role === 'superadmin' ||
+    currentUser.isAdmin === true;
+
+  // Role change to a privileged role.
+  if (body.role !== undefined && PRIVILEGED_ROLES.includes(body.role)) {
+    // Promoting to a privileged role the user doesn't already hold, OR
+    // changing between privileged roles (e.g. admin -> superadmin).
+    if (!alreadyPrivileged || body.role !== currentUser.role) return body.role;
+  }
+
+  // Legacy isAdmin flag flipped on for a non-privileged user.
+  if (body.isAdmin === true && !alreadyPrivileged) return 'admin';
+
+  return null;
+}
 
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'secret123', {
@@ -461,6 +510,8 @@ router.get('/:id', protect, admin, async (req, res, next) => {
 // @desc    Modify a user (role / access / details) — admin
 // @route   PUT /api/users/:id
 // @access  Private/Admin
+// @note    Granting admin privileges is NOT allowed here — it must go through
+//          the email-OTP approval flow (POST /:id/role-otp/request + /verify).
 router.put('/:id', protect, admin, async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -469,6 +520,15 @@ router.put('/:id', protect, admin, async (req, res, next) => {
     }
 
     const { name, phone, role, isAdmin, isActive } = req.body;
+
+    // Block privilege escalation on the direct edit path — it requires OTP
+    // approval. Demotions, deactivation, and profile edits pass through.
+    if (escalationRole(user, req.body)) {
+      return res.status(403).json({
+        message: 'Granting admin access requires email approval. Use the approval flow.',
+        code: 'OTP_REQUIRED',
+      });
+    }
 
     if (name !== undefined) user.name = name;
     if (phone !== undefined) user.phone = phone;
@@ -483,6 +543,126 @@ router.put('/:id', protect, admin, async (req, res, next) => {
     const updated = await user.save({ validateBeforeSave: false });
     const obj = updated.toObject();
     delete obj.password;
+    res.json(obj);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Request an OTP (emailed to the approver) to promote a user to admin
+// @route   POST /api/users/:id/role-otp/request   { role }
+// @access  Private/Admin
+router.post('/:id/role-otp/request', protect, admin, otpRequestLimiter, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const role = req.body.role;
+    if (!PRIVILEGED_ROLES.includes(role)) {
+      return res.status(400).json({ message: 'A privileged role (admin or superadmin) is required' });
+    }
+
+    // Guard: only proceed if this is a genuine escalation.
+    if (!escalationRole(user, { role })) {
+      return res.status(400).json({ message: 'This user already holds that access.' });
+    }
+
+    // Invalidate any prior pending OTPs for this user so only the latest works.
+    await AdminOtp.deleteMany({ targetUser: user._id, consumed: false });
+
+    const code = AdminOtp.generateCode(6);
+    const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
+
+    await AdminOtp.create({
+      targetUser: user._id,
+      requestedRole: role,
+      codeHash: AdminOtp.hashCode(code),
+      requestedBy: req.user._id,
+      expiresAt,
+    });
+
+    const { subject, html, text } = adminRoleOtpEmail({
+      code,
+      targetName: user.name,
+      targetEmail: user.email,
+      requestedRole: role,
+      requestedByName: req.user.name,
+      expiresMinutes: OTP_TTL_MINUTES,
+    });
+
+    const result = await sendMail({ to: approverEmail(), subject, html, text });
+
+    // Fail loudly if the email did not actually go out — otherwise the admin
+    // would be waiting for a code that will never arrive.
+    if (!result.sent) {
+      // Clean up the unusable OTP so a retry starts fresh.
+      await AdminOtp.deleteMany({ targetUser: user._id, consumed: false });
+      const reason = result.skipped
+        ? 'Email is not configured on the server.'
+        : 'Could not send the approval email. Please try again.';
+      return res.status(502).json({ message: reason });
+    }
+
+    // Never reveal the approver address or the code to the caller.
+    res.status(202).json({
+      message: 'An approval code has been emailed to the authorized approver.',
+      expiresInMinutes: OTP_TTL_MINUTES,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// @desc    Verify the OTP and commit the admin promotion
+// @route   POST /api/users/:id/role-otp/verify   { role, code }
+// @access  Private/Admin
+router.post('/:id/role-otp/verify', protect, admin, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const { role, code } = req.body;
+    if (!PRIVILEGED_ROLES.includes(role) || !code) {
+      return res.status(400).json({ message: 'Role and code are required' });
+    }
+
+    const otp = await AdminOtp.findOne({
+      targetUser: user._id,
+      requestedRole: role,
+      consumed: false,
+    }).sort({ createdAt: -1 });
+
+    if (!otp || otp.expiresAt.getTime() < Date.now()) {
+      return res.status(400).json({ message: 'No valid code found. Request a new one.', code: 'OTP_EXPIRED' });
+    }
+
+    if (otp.attempts >= OTP_MAX_ATTEMPTS) {
+      await otp.deleteOne();
+      return res.status(429).json({ message: 'Too many incorrect attempts. Request a new code.', code: 'OTP_LOCKED' });
+    }
+
+    const matches = otp.codeHash === AdminOtp.hashCode(String(code).trim());
+    if (!matches) {
+      otp.attempts += 1;
+      await otp.save();
+      const remaining = Math.max(0, OTP_MAX_ATTEMPTS - otp.attempts);
+      return res.status(400).json({ message: `Incorrect code. ${remaining} attempt(s) left.`, code: 'OTP_INVALID' });
+    }
+
+    // Correct code — commit the promotion and consume the OTP.
+    otp.consumed = true;
+    await otp.save();
+
+    user.role = role;
+    user.isAdmin = true; // both privileged roles imply admin access
+    const updated = await user.save({ validateBeforeSave: false });
+    const obj = updated.toObject();
+    delete obj.password;
+
     res.json(obj);
   } catch (error) {
     next(error);

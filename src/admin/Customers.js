@@ -96,6 +96,8 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingAddr, setEditingAddr] = useState(null);
+  // Admin-promotion OTP flow: null when idle, otherwise the pending request.
+  const [otp, setOtp] = useState(null); // { role, code, stage, error, busy }
 
   const load = useCallback(async () => {
     try {
@@ -123,6 +125,70 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
     }
     setSaving(false);
   };
+
+  const PRIVILEGED = ["admin", "superadmin"];
+
+  // Would setting `newRole` grant privileges this user doesn't already hold?
+  const isEscalation = (newRole) => {
+    const u = data?.user;
+    if (!u || !PRIVILEGED.includes(newRole)) return false;
+    const alreadyPrivileged = PRIVILEGED.includes(u.role) || u.isAdmin === true;
+    return !alreadyPrivileged || newRole !== u.role;
+  };
+
+  // Role <select> handler: escalations go through the OTP approval flow,
+  // everything else (e.g. demotion to customer) saves directly.
+  const handleRoleChange = (newRole) => {
+    if (isEscalation(newRole)) {
+      setOtp({ role: newRole, code: "", stage: "request", error: null, busy: false });
+    } else {
+      saveUser({ role: newRole });
+    }
+  };
+
+  // Step 1: ask the server to email an approval code to the approver.
+  const requestOtp = async () => {
+    setOtp((o) => ({ ...o, busy: true, error: null }));
+    try {
+      const res = await fetch(`${API_URL}/api/users/${userId}/role-otp/request`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ role: otp.role }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || "Could not send approval code.");
+      setOtp((o) => ({ ...o, busy: false, stage: "verify", error: null }));
+    } catch (err) {
+      setOtp((o) => ({ ...o, busy: false, error: err.message }));
+    }
+  };
+
+  // Step 2: submit the entered code; on success apply the promoted user.
+  const verifyOtp = async () => {
+    const code = (otp.code || "").trim();
+    if (!code) {
+      setOtp((o) => ({ ...o, error: "Enter the code sent to the approver." }));
+      return;
+    }
+    setOtp((o) => ({ ...o, busy: true, error: null }));
+    try {
+      const res = await fetch(`${API_URL}/api/users/${userId}/role-otp/verify`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({ role: otp.role, code }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.message || "Verification failed.");
+      // Success: `body` is the updated user document.
+      setData((d) => ({ ...d, user: { ...d.user, ...body } }));
+      onUserPatched(userId, body);
+      setOtp(null);
+    } catch (err) {
+      setOtp((o) => ({ ...o, busy: false, error: err.message }));
+    }
+  };
+
+  const cancelOtp = () => setOtp(null);
 
   const deleteAddress = async (addrId) => {
     const res = await fetch(`${API_URL}/api/users/${userId}/address/${addrId}`, {
@@ -168,11 +234,56 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
               <div className="admin__form-grid">
                 <div className="admin__form-group">
                   <label className="admin__form-label">Role</label>
-                  <select className="admin__form-select" value={u.role || "customer"} onChange={(e) => saveUser({ role: e.target.value })} disabled={saving}>
+                  <select className="admin__form-select" value={u.role || "customer"} onChange={(e) => handleRoleChange(e.target.value)} disabled={saving || !!otp}>
                     <option value="customer">Customer</option>
                     <option value="admin">Admin</option>
                     <option value="superadmin">Super Admin</option>
                   </select>
+                  {otp && (
+                    <div className="admin__otp">
+                      {otp.stage === "request" ? (
+                        <>
+                          <p className="admin__otp-text">
+                            Granting <strong>{otp.role === "superadmin" ? "Super Admin" : "Admin"}</strong> access
+                            requires email approval. A one-time code will be sent to the authorized approver.
+                          </p>
+                          {otp.error && <p className="admin__otp-error">{otp.error}</p>}
+                          <div className="admin__otp-actions">
+                            <button type="button" className="admin__btn admin__btn--ghost admin__btn--sm" onClick={cancelOtp} disabled={otp.busy}>Cancel</button>
+                            <button type="button" className="admin__btn admin__btn--primary admin__btn--sm" onClick={requestOtp} disabled={otp.busy}>
+                              {otp.busy ? "Sending…" : "Send approval code"}
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <p className="admin__otp-text">
+                            Enter the code emailed to the approver to confirm <strong>{otp.role === "superadmin" ? "Super Admin" : "Admin"}</strong> access.
+                          </p>
+                          <input
+                            className="admin__form-input"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            placeholder="6-digit code"
+                            value={otp.code}
+                            onChange={(e) => setOtp((o) => ({ ...o, code: e.target.value.replace(/\D/g, ""), error: null }))}
+                            onKeyDown={(e) => { if (e.key === "Enter") verifyOtp(); }}
+                            disabled={otp.busy}
+                            autoFocus
+                          />
+                          {otp.error && <p className="admin__otp-error">{otp.error}</p>}
+                          <div className="admin__otp-actions">
+                            <button type="button" className="admin__btn admin__btn--ghost admin__btn--sm" onClick={cancelOtp} disabled={otp.busy}>Cancel</button>
+                            <button type="button" className="admin__btn admin__btn--ghost admin__btn--sm" onClick={requestOtp} disabled={otp.busy}>Resend</button>
+                            <button type="button" className="admin__btn admin__btn--primary admin__btn--sm" onClick={verifyOtp} disabled={otp.busy}>
+                              {otp.busy ? "Verifying…" : "Confirm access"}
+                            </button>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="admin__form-group">
                   <label className="admin__form-label">Account access</label>
