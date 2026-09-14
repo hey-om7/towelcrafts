@@ -23,7 +23,8 @@
     "cross-env": "^7.0.3"
   },
   "scripts": {
-    "start": "npm --prefix server start",
+    "start": "concurrently -n server,client -c magenta,cyan \"npm --prefix server run dev\" \"npm run client\"",
+    "start:prod": "npm --prefix server start",
     "dev": "concurrently -n client,server -c cyan,magenta \"react-scripts start\" \"npm --prefix server run dev\"",
     "client": "react-scripts start",
     "server": "npm --prefix server run dev",
