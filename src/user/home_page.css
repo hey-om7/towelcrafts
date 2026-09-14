@@ -811,12 +811,60 @@
   .showcase__media::after { display: none; }
 
   .footer__top {
-    grid-template-columns: 1fr;
-    gap: var(--space-8);
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-8) var(--space-6);
     padding: var(--space-16) 0 var(--space-10);
   }
-  .footer__brand { max-width: 100%; }
+  /* Brand spans the full width above the two link columns */
+  .footer__brand {
+    grid-column: 1 / -1;
+    max-width: 100%;
+    margin-bottom: var(--space-2);
+  }
+  /* Connect group spans full width so socials get their own row */
+  .footer__connect { grid-column: 1 / -1; }
   .footer__bottom { flex-direction: column; gap: var(--space-2); text-align: center; }
+
+  /* Socials become a compact horizontal row of icon-only buttons */
+  .footer__socials {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+  }
+  .footer__socials a {
+    position: relative;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: var(--radius-full, 999px);
+    color: rgba(255, 255, 255, 0.7);
+    transition: color var(--transition-fast), border-color var(--transition-fast),
+      background-color var(--transition-fast);
+  }
+  .footer__socials a svg { font-size: 1.15rem; }
+  .footer__socials a:hover,
+  .footer__socials a:focus-visible {
+    color: var(--color-primary-darker);
+    background-color: var(--color-accent-light);
+    border-color: var(--color-accent-light);
+  }
+  /* Hide the text label — the icon + aria-label carry the meaning.
+     Contained inside the relatively-positioned anchor so it can never
+     extend the document height / create dead scroll space. */
+  .footer__social-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
 }
 
 @media (max-width: 560px) {

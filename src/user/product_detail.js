@@ -34,6 +34,7 @@ function ProductDetail() {
   }, [productId]);
 
   const handleBuyNow = () => {
+    if (outOfStock) return;
     const userInfoRaw = localStorage.getItem("userInfo");
     const userInfo = userInfoRaw ? JSON.parse(userInfoRaw) : null;
 
@@ -46,6 +47,7 @@ function ProductDetail() {
   };
 
   const handleAddToCart = () => {
+    if (outOfStock) return;
     addItem(product, quantity);
     setJustAdded(true);
     window.clearTimeout(handleAddToCart._t);
@@ -79,6 +81,10 @@ function ProductDetail() {
   const images = product.images && product.images.length > 0
     ? [product.image, ...product.images]
     : [product.image];
+
+  // A product is unavailable when explicitly flagged out of stock or when its
+  // tracked quantity has reached zero.
+  const outOfStock = product.inStock === false || product.stockQuantity === 0;
 
   const nextImage = () => setCurrentImage((i) => (i + 1) % images.length);
   const prevImage = () => setCurrentImage((i) => (i - 1 + images.length) % images.length);
@@ -126,6 +132,9 @@ function ProductDetail() {
             )}
             {discount > 0 && (
               <span className="pd-gallery__badge">{discount}% OFF</span>
+            )}
+            {outOfStock && (
+              <span className="pd-gallery__badge pd-gallery__badge--sold-out">Sold Out</span>
             )}
           </div>
           {images.length > 1 && (
@@ -189,6 +198,18 @@ function ProductDetail() {
             )}
           </div>
 
+          {/* Availability */}
+          <div className={`pd-info__stock ${outOfStock ? "pd-info__stock--out" : "pd-info__stock--in"}`}>
+            <span className="pd-info__stock-dot" aria-hidden="true" />
+            {outOfStock ? (
+              <span>Out of stock</span>
+            ) : product.stockQuantity > 0 && product.stockQuantity <= 5 ? (
+              <span>Only {product.stockQuantity} left in stock</span>
+            ) : (
+              <span>In stock</span>
+            )}
+          </div>
+
           {/* Description */}
           <p className="pd-info__description">{product.description}</p>
 
@@ -223,6 +244,7 @@ function ProductDetail() {
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                 className="pd-info__qty-btn"
                 aria-label="Decrease quantity"
+                disabled={outOfStock}
               >
                 −
               </button>
@@ -231,6 +253,7 @@ function ProductDetail() {
                 onClick={() => setQuantity((q) => q + 1)}
                 className="pd-info__qty-btn"
                 aria-label="Increase quantity"
+                disabled={outOfStock}
               >
                 +
               </button>
@@ -239,6 +262,7 @@ function ProductDetail() {
               className={`pd-info__cart-btn ${justAdded ? "pd-info__cart-btn--added" : ""}`}
               onClick={handleAddToCart}
               aria-live="polite"
+              disabled={outOfStock}
             >
               {justAdded ? (
                 <>
@@ -250,8 +274,12 @@ function ProductDetail() {
                 </>
               )}
             </button>
-            <button className="pd-info__buy-btn" onClick={handleBuyNow}>
-              Buy Now — ₹{(product.price * quantity).toLocaleString()}
+            <button
+              className="pd-info__buy-btn"
+              onClick={handleBuyNow}
+              disabled={outOfStock}
+            >
+              {outOfStock ? "Out of Stock" : `Buy Now — ₹${(product.price * quantity).toLocaleString()}`}
             </button>
           </div>
 

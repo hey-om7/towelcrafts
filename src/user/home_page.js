@@ -334,17 +334,20 @@ export function SiteFooter() {
             <Link to="/returns">Returns</Link>
           </nav>
 
-          <div className="footer__links-group">
+          <div className="footer__links-group footer__connect">
             <h4>Connect</h4>
             <div className="footer__socials">
               <a href="https://instagram.com" aria-label="Instagram" target="_blank" rel="noreferrer">
-                <FaInstagram aria-hidden="true" /> Instagram
+                <FaInstagram aria-hidden="true" />
+                <span className="footer__social-label">Instagram</span>
               </a>
               <a href="https://twitter.com" aria-label="Twitter" target="_blank" rel="noreferrer">
-                <FaTwitter aria-hidden="true" /> Twitter
+                <FaTwitter aria-hidden="true" />
+                <span className="footer__social-label">Twitter</span>
               </a>
               <a href="https://linkedin.com" aria-label="LinkedIn" target="_blank" rel="noreferrer">
-                <FaLinkedin aria-hidden="true" /> LinkedIn
+                <FaLinkedin aria-hidden="true" />
+                <span className="footer__social-label">LinkedIn</span>
               </a>
             </div>
           </div>
