@@ -63,9 +63,62 @@ app.set('trust proxy', 1);
 // ─────────────────────────────────────────────
 // Security middleware
 // ─────────────────────────────────────────────
+// R2 public bucket base (for img-src). Falls back to a wildcard R2 dev domain
+// if not set so images don't silently break.
+const r2Origin = (() => {
+  try {
+    return new URL(process.env.R2_PUBLIC_URL).origin;
+  } catch {
+    return 'https://*.r2.dev';
+  }
+})();
+
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        defaultSrc: ["'self'"],
+        // App fetches its own API (same origin) plus Razorpay + Google endpoints.
+        connectSrc: [
+          "'self'",
+          'https://api.razorpay.com',
+          'https://lumberjack.razorpay.com',
+          'https://accounts.google.com',
+        ],
+        // Google Identity Services + Razorpay checkout scripts.
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://accounts.google.com',
+          'https://checkout.razorpay.com',
+          'https://*.razorpay.com',
+        ],
+        scriptSrcElem: [
+          "'self'",
+          "'unsafe-inline'",
+          'https://accounts.google.com',
+          'https://checkout.razorpay.com',
+          'https://*.razorpay.com',
+        ],
+        // Google Fonts stylesheet + inline styles from the build.
+        styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+        fontSrc: ["'self'", 'https://fonts.gstatic.com', 'data:'],
+        // R2 image bucket + data/blob previews.
+        imgSrc: ["'self'", 'data:', 'blob:', r2Origin],
+        // Google sign-in + Razorpay render inside iframes.
+        frameSrc: [
+          "'self'",
+          'https://accounts.google.com',
+          'https://api.razorpay.com',
+          'https://checkout.razorpay.com',
+          'https://*.razorpay.com',
+        ],
+        // Keep the browser from upgrading nothing / allow same-origin workers.
+        workerSrc: ["'self'", 'blob:'],
+      },
+    },
   })
 );
 

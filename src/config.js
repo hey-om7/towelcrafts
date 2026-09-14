@@ -7,9 +7,15 @@
 //   - Production (single Render service): defaults to '' so requests hit the
 //     same origin that serves the built frontend. Override with
 //     REACT_APP_API_URL only when the backend is deployed separately.
+// If REACT_APP_API_URL is defined at build time (including an empty string,
+// which means "same origin"), honor it. Otherwise fall back to the local
+// backend in development. This avoids the trap where a production build that
+// didn't receive NODE_ENV=production would bake in the localhost URL.
+const RAW_API_URL = process.env.REACT_APP_API_URL;
 export const API_URL =
-  process.env.REACT_APP_API_URL ??
-  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
+  RAW_API_URL !== undefined
+    ? RAW_API_URL.replace(/\/+$/, '')
+    : (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
 
 // Base for the separated admin API. Every endpoint under here is admin-only on
 // the server (auth enforced on every method, including GET). Admin panel
