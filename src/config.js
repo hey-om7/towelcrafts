@@ -22,6 +22,20 @@ export function isAuthError(res) {
 export const GOOGLE_CLIENT_ID =
   process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 
+// Roles model (mirrors the server). 'user' is the baseline; 'admin' and
+// 'manager' are staff roles that grant admin-panel access.
+export const STAFF_ROLES = ['admin', 'manager'];
+
+/** Read the roles array off a stored userInfo object (safe for missing data). */
+export function userRoles(userInfo) {
+  return Array.isArray(userInfo?.roles) ? userInfo.roles : [];
+}
+
+/** True if the userInfo holds any staff role (admin or manager). */
+export function isStaff(userInfo) {
+  return userRoles(userInfo).some((r) => STAFF_ROLES.includes(r));
+}
+
 // Optional public base for images stored in Cloudflare R2. In most setups the
 // backend already returns fully-qualified R2 URLs, so this is only used as a
 // fallback to rewrite bare object keys (e.g. "products/foo.webp") into URLs.

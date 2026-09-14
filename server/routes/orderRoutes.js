@@ -180,8 +180,8 @@ router.get('/:id', protect, async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    // Check if user owns this order or is admin
-    if (order.user._id.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    // Check if user owns this order or is staff
+    if (order.user._id.toString() !== req.user._id.toString() && !req.user.isStaff()) {
       return res.status(403).json({ message: 'Not authorized to view this order' });
     }
 
@@ -204,7 +204,7 @@ router.put('/:id/cancel', protect, async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
-    if (order.user.toString() !== req.user._id.toString() && !req.user.isAdmin) {
+    if (order.user.toString() !== req.user._id.toString() && !req.user.isStaff()) {
       return res.status(403).json({ message: 'Not authorized' });
     }
 

@@ -83,8 +83,7 @@ router.post('/google', async (req, res, next) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      isAdmin: user.isAdmin,
-      role: user.role,
+      roles: user.roles,
       avatar: user.avatar,
       token: generateToken(user._id),
     });
@@ -130,8 +129,7 @@ router.post('/login', async (req, res, next) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      isAdmin: user.isAdmin,
-      role: user.role,
+      roles: user.roles,
       avatar: user.avatar,
       token: generateToken(user._id),
     });
@@ -186,8 +184,7 @@ router.post('/', async (req, res, next) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      isAdmin: user.isAdmin,
-      role: user.role,
+      roles: user.roles,
       token: generateToken(user._id),
     });
   } catch (error) {
@@ -210,8 +207,7 @@ router.get('/profile', protect, async (req, res, next) => {
       name: user.name,
       email: user.email,
       phone: user.phone,
-      isAdmin: user.isAdmin,
-      role: user.role,
+      roles: user.roles,
       avatar: user.avatar,
       createdAt: user.createdAt,
     });
@@ -257,8 +253,7 @@ router.put('/profile', protect, async (req, res, next) => {
       name: updatedUser.name,
       email: updatedUser.email,
       phone: updatedUser.phone,
-      isAdmin: updatedUser.isAdmin,
-      role: updatedUser.role,
+      roles: updatedUser.roles,
       avatar: updatedUser.avatar,
       token: generateToken(updatedUser._id),
     });

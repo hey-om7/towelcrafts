@@ -21,10 +21,10 @@ const adminOtpSchema = mongoose.Schema(
       required: true,
       ref: 'User',
     },
-    // The privileged role being granted ('admin' | 'superadmin').
+    // The privileged role being granted ('admin' | 'manager').
     requestedRole: {
       type: String,
-      enum: ['admin', 'superadmin'],
+      enum: ['admin', 'manager'],
       required: true,
     },
     // SHA-256 hash of the numeric code (plaintext is never persisted).

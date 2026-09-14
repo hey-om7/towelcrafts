@@ -1,6 +1,11 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
+// The only roles a user may hold. 'user' is the baseline every account has;
+// 'admin' and 'manager' are elevated staff roles that grant admin-panel access.
+const ROLES = ['user', 'admin', 'manager'];
+const STAFF_ROLES = ['admin', 'manager'];
+
 const userSchema = mongoose.Schema(
   {
     name: {
@@ -47,14 +52,14 @@ const userSchema = mongoose.Schema(
       index: true,
       sparse: true,
     },
-    role: {
-      type: String,
-      enum: ['customer', 'admin', 'superadmin'],
-      default: 'customer',
-    },
-    isAdmin: {
-      type: Boolean,
-      default: false,
+    roles: {
+      type: [String],
+      enum: {
+        values: ROLES,
+        message: '{VALUE} is not a valid role',
+      },
+      // Every account is at least a normal user.
+      default: ['user'],
     },
     isActive: {
       type: Boolean,
@@ -76,7 +81,7 @@ const userSchema = mongoose.Schema(
 );
 
 // Indexes for performance
-userSchema.index({ role: 1 });
+userSchema.index({ roles: 1 });
 userSchema.index({ isActive: 1 });
 
 // Virtual for user's addresses
@@ -90,6 +95,25 @@ userSchema.virtual('addresses', {
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
+
+// True if the user holds the given role.
+userSchema.methods.hasRole = function (role) {
+  return Array.isArray(this.roles) && this.roles.includes(role);
+};
+
+// True if the user has any elevated (admin-panel) role.
+userSchema.methods.isStaff = function () {
+  return Array.isArray(this.roles) && this.roles.some((r) => STAFF_ROLES.includes(r));
+};
+
+// Normalize roles before saving: always include the baseline 'user', dedupe,
+// and drop anything not in the allowed set.
+userSchema.pre('save', function () {
+  if (!Array.isArray(this.roles)) this.roles = [];
+  const cleaned = this.roles.filter((r) => ROLES.includes(r));
+  if (!cleaned.includes('user')) cleaned.unshift('user');
+  this.roles = [...new Set(cleaned)];
+});
 
 // Pre-save hook to hash password
 userSchema.pre('save', async function () {
@@ -110,3 +134,5 @@ userSchema.methods.toJSON = function () {
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
+module.exports.ROLES = ROLES;
+module.exports.STAFF_ROLES = STAFF_ROLES;

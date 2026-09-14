@@ -4,6 +4,18 @@ import { ADMIN_API, isAuthError } from "../config";
 
 const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
+// Roles model helpers (mirror the server).
+const STAFF_ROLES = ["admin", "manager"];
+const rolesOf = (u) => (Array.isArray(u?.roles) ? u.roles : []);
+const isStaff = (u) => rolesOf(u).some((r) => STAFF_ROLES.includes(r));
+// A short human label for the roles a user holds, e.g. "Admin", "Manager",
+// "Admin · Manager", or "Customer" for a plain user.
+const roleLabel = (u) => {
+  const staff = rolesOf(u).filter((r) => STAFF_ROLES.includes(r));
+  if (staff.length === 0) return "Customer";
+  return staff.map((r) => r.charAt(0).toUpperCase() + r.slice(1)).join(" · ");
+};
+
 export default function Customers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +61,7 @@ export default function Customers() {
     <div>
       <div className="admin__stats">
         <div className="admin__stat"><span className="admin__stat-label">Total Customers</span><div className="admin__stat-value">{users.length}</div></div>
-        <div className="admin__stat"><span className="admin__stat-label">Admins</span><div className="admin__stat-value">{users.filter((u) => u.isAdmin).length}</div></div>
+        <div className="admin__stat"><span className="admin__stat-label">Staff</span><div className="admin__stat-value">{users.filter(isStaff).length}</div></div>
         <div className="admin__stat"><span className="admin__stat-label">Deactivated</span><div className="admin__stat-value">{users.filter((u) => u.isActive === false).length}</div></div>
       </div>
 
@@ -68,7 +80,7 @@ export default function Customers() {
               <tr key={u._id}>
                 <td data-label="Name"><span className="admin__table-product-name">{u.name}</span></td>
                 <td data-label="Email"><span className="admin__mono">{u.email}</span></td>
-                <td data-label="Role"><span className={`admin__badge admin__badge--${u.isAdmin ? "approved" : "placed"}`}>{u.role || (u.isAdmin ? "admin" : "customer")}</span></td>
+                <td data-label="Role"><span className={`admin__badge admin__badge--${isStaff(u) ? "approved" : "placed"}`}>{roleLabel(u)}</span></td>
                 <td data-label="Access"><span className={`admin__badge admin__badge--${u.isActive === false ? "cancelled" : "delivered"}`}>{u.isActive === false ? "Disabled" : "Active"}</span></td>
                 <td data-label="Joined">{u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "—"}</td>
                 <td data-label="Actions">
@@ -127,23 +139,17 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
     setSaving(false);
   };
 
-  const PRIVILEGED = ["admin", "superadmin"];
-
-  // Would setting `newRole` grant privileges this user doesn't already hold?
-  const isEscalation = (newRole) => {
-    const u = data?.user;
-    if (!u || !PRIVILEGED.includes(newRole)) return false;
-    const alreadyPrivileged = PRIVILEGED.includes(u.role) || u.isAdmin === true;
-    return !alreadyPrivileged || newRole !== u.role;
-  };
-
-  // Role <select> handler: escalations go through the OTP approval flow,
-  // everything else (e.g. demotion to customer) saves directly.
-  const handleRoleChange = (newRole) => {
-    if (isEscalation(newRole)) {
-      setOtp({ role: newRole, code: "", stage: "request", error: null, busy: false });
+  // Toggle a single staff role (admin/manager) on the user.
+  //  - Turning ON a role the user lacks = escalation → OTP approval flow.
+  //  - Turning OFF a role = direct save (demotion), no approval needed.
+  const currentRoles = rolesOf(data?.user);
+  const toggleRole = (role, turnOn) => {
+    if (turnOn) {
+      if (currentRoles.includes(role)) return;
+      setOtp({ role, code: "", stage: "request", error: null, busy: false });
     } else {
-      saveUser({ role: newRole });
+      const nextRoles = currentRoles.filter((r) => r !== role);
+      saveUser({ roles: nextRoles });
     }
   };
 
@@ -233,19 +239,34 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
               {/* Access / role controls */}
               <h4 className="admin__modal-label">User Access</h4>
               <div className="admin__form-grid">
-                <div className="admin__form-group">
-                  <label className="admin__form-label">Role</label>
-                  <select className="admin__form-select" value={u.role || "customer"} onChange={(e) => handleRoleChange(e.target.value)} disabled={saving || !!otp}>
-                    <option value="customer">Customer</option>
-                    <option value="admin">Admin</option>
-                    <option value="superadmin">Super Admin</option>
-                  </select>
+                <div className="admin__form-group admin__form-group--full">
+                  <label className="admin__form-label">Staff roles</label>
+                  <div className="admin__roles">
+                    {["admin", "manager"].map((role) => {
+                      const has = currentRoles.includes(role);
+                      const pendingThis = otp && otp.role === role;
+                      return (
+                        <label key={role} className="admin__role-toggle">
+                          <input
+                            type="checkbox"
+                            checked={has}
+                            disabled={saving || (!!otp && !pendingThis)}
+                            onChange={(e) => toggleRole(role, e.target.checked)}
+                          />
+                          <span>{role.charAt(0).toUpperCase() + role.slice(1)}</span>
+                        </label>
+                      );
+                    })}
+                    <span className="admin__role-hint">
+                      Every account is a customer. Granting a staff role requires email approval.
+                    </span>
+                  </div>
                   {otp && (
                     <div className="admin__otp">
                       {otp.stage === "request" ? (
                         <>
                           <p className="admin__otp-text">
-                            Granting <strong>{otp.role === "superadmin" ? "Super Admin" : "Admin"}</strong> access
+                            Granting <strong>{otp.role.charAt(0).toUpperCase() + otp.role.slice(1)}</strong> access
                             requires email approval. A one-time code will be sent to the authorized approver.
                           </p>
                           {otp.error && <p className="admin__otp-error">{otp.error}</p>}
@@ -259,7 +280,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
                       ) : (
                         <>
                           <p className="admin__otp-text">
-                            Enter the code emailed to the approver to confirm <strong>{otp.role === "superadmin" ? "Super Admin" : "Admin"}</strong> access.
+                            Enter the code emailed to the approver to confirm <strong>{otp.role.charAt(0).toUpperCase() + otp.role.slice(1)}</strong> access.
                           </p>
                           <input
                             className="admin__form-input"

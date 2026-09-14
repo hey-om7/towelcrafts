@@ -40,15 +40,33 @@ const protect = async (req, res, next) => {
   }
 };
 
+const { STAFF_ROLES } = require('../models/User');
+
 /**
- * Admin middleware - check admin role
+ * Admin middleware — allows users holding any elevated (staff) role.
+ * Staff roles are 'admin' and 'manager'; both grant admin-panel access.
  */
 const admin = (req, res, next) => {
-  if (req.user && (req.user.isAdmin || req.user.role === 'admin' || req.user.role === 'superadmin')) {
+  const roles = (req.user && req.user.roles) || [];
+  const isStaff = Array.isArray(roles) && roles.some((r) => STAFF_ROLES.includes(r));
+  if (isStaff) {
     next();
   } else {
     res.status(403).json({ message: 'Not authorized, admin access required' });
   }
 };
 
-module.exports = { protect, admin };
+/**
+ * Factory: require a specific role (e.g. requireRole('manager')).
+ * Use for endpoints that only one staff role should reach.
+ */
+const requireRole = (role) => (req, res, next) => {
+  const roles = (req.user && req.user.roles) || [];
+  if (Array.isArray(roles) && roles.includes(role)) {
+    next();
+  } else {
+    res.status(403).json({ message: `Not authorized, ${role} access required` });
+  }
+};
+
+module.exports = { protect, admin, requireRole };

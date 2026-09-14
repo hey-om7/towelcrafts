@@ -43,9 +43,8 @@ export function AdminDashboard() {
   const isLoggedIn = Boolean(userInfo && userInfo.token);
   const isAdminUser =
     isLoggedIn &&
-    (userInfo.isAdmin === true ||
-      userInfo.role === "admin" ||
-      userInfo.role === "superadmin");
+    Array.isArray(userInfo.roles) &&
+    userInfo.roles.some((r) => r === "admin" || r === "manager");
 
   const handleLogout = () => {
     localStorage.removeItem("userInfo");

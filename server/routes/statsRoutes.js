@@ -35,7 +35,7 @@ router.get('/overview', protect, admin, async (req, res, next) => {
       ratingAgg,
     ] = await Promise.all([
       Order.countDocuments(),
-      User.countDocuments({ role: 'customer' }),
+      User.countDocuments({ roles: { $nin: ['admin', 'manager'] } }),
       Product.countDocuments(),
       Feedback.countDocuments(),
       // Total revenue (non-cancelled)
@@ -204,7 +204,7 @@ router.get('/monthly', protect, admin, async (req, res, next) => {
         { $sort: { revenue: -1 } },
         { $limit: 10 },
       ]),
-      User.countDocuments({ role: 'customer', createdAt: { $gte: start, $lt: end } }),
+      User.countDocuments({ roles: { $nin: ['admin', 'manager'] }, createdAt: { $gte: start, $lt: end } }),
       Order.aggregate([
         { $match: validRange },
         {

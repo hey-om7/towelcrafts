@@ -13,6 +13,9 @@ function NavBar() {
   const dropdownRef = useRef(null);
   const { count } = useCart();
   const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+  const isStaffUser =
+    Array.isArray(userInfo?.roles) &&
+    userInfo.roles.some((r) => r === "admin" || r === "manager");
 
   const handleLogout = () => {
     localStorage.removeItem("userInfo");
@@ -144,7 +147,7 @@ function NavBar() {
                       Addresses
                     </Link>
                     <div className="navbar__dropdown-divider" />
-                    {userInfo.isAdmin && (
+                    {isStaffUser && (
                       <Link to="/admin" className="navbar__dropdown-item">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                           <path d="M12 2L2 7l10 5 10-5-10-5z"/>
@@ -240,7 +243,7 @@ function NavBar() {
                     <p className="mobile-menu__user-email">{userInfo.email}</p>
                   </div>
                 </div>
-                {userInfo.isAdmin && (
+                {isStaffUser && (
                   <Link
                     to="/admin"
                     className="mobile-menu__action-btn"

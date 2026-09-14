@@ -393,8 +393,7 @@ const importData = async () => {
       name: 'Admin User',
       email: 'admin@example.com',
       password: '123devpassword',
-      isAdmin: true,
-      role: 'admin',
+      roles: ['user', 'admin'],
       phone: '9876543210',
     });
 
@@ -403,7 +402,7 @@ const importData = async () => {
       name: 'Jai Kumar',
       email: 'jai@example.com',
       password: 'customer123',
-      role: 'customer',
+      roles: ['user'],
       phone: '9876543211',
     });
 

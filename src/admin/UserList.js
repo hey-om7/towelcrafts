@@ -45,7 +45,7 @@ export function UserList() {
                             <td>{user._id}</td>
                             <td>{user.name}</td>
                             <td>{user.email}</td>
-                            <td>{user.isAdmin ? "Yes" : "No"}</td>
+                            <td>{Array.isArray(user.roles) && user.roles.some((r) => r === "admin" || r === "manager") ? "Yes" : "No"}</td>
                         </tr>
                     ))}
                 </tbody>

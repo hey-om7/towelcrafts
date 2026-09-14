@@ -18,7 +18,7 @@ const { adminRoleOtpEmail } = require('../../utils/emailTemplates');
 
 const OTP_TTL_MINUTES = 10;
 const OTP_MAX_ATTEMPTS = 5;
-const PRIVILEGED_ROLES = ['admin', 'superadmin'];
+const { STAFF_ROLES, ROLES } = require('../../models/User');
 
 // Throttle OTP requests to blunt email-spam / enumeration.
 const otpRequestLimiter = rateLimit({
@@ -29,27 +29,29 @@ const otpRequestLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-/** Fixed approver address that must confirm any admin promotion. */
+/** Fixed approver address that must confirm any staff-role promotion. */
 function approverEmail() {
   return process.env.ADMIN_APPROVER_EMAIL || 'om.ambarkar@gmail.com';
 }
 
-/**
- * Determine whether a requested change would GRANT admin privileges to a user
- * who does not already hold them. Only these transitions require OTP approval.
- * @returns {string|null} the privileged role being granted, or null if none
- */
-function escalationRole(currentUser, body) {
-  const alreadyPrivileged =
-    currentUser.role === 'admin' ||
-    currentUser.role === 'superadmin' ||
-    currentUser.isAdmin === true;
+/** Normalize an arbitrary roles input into a clean, valid, deduped array. */
+function normalizeRoles(input) {
+  const arr = Array.isArray(input) ? input : [];
+  const cleaned = arr.filter((r) => ROLES.includes(r));
+  if (!cleaned.includes('user')) cleaned.unshift('user');
+  return [...new Set(cleaned)];
+}
 
-  if (body.role !== undefined && PRIVILEGED_ROLES.includes(body.role)) {
-    if (!alreadyPrivileged || body.role !== currentUser.role) return body.role;
-  }
-  if (body.isAdmin === true && !alreadyPrivileged) return 'admin';
-  return null;
+/**
+ * Given the current user and a requested `roles` array, return the staff roles
+ * that would be NEWLY GRANTED (i.e. added). Granting any staff role requires
+ * OTP approval; removing roles or editing other fields does not.
+ * @returns {string[]} staff roles being added (empty if none)
+ */
+function escalatedRoles(currentUser, requestedRoles) {
+  if (!Array.isArray(requestedRoles)) return [];
+  const current = new Set(currentUser.roles || []);
+  return requestedRoles.filter((r) => STAFF_ROLES.includes(r) && !current.has(r));
 }
 
 // @desc    Get all users
@@ -102,10 +104,11 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-// @desc    Modify a user (role / access / details)
+// @desc    Modify a user (roles / access / details)
 // @route   PUT /api/admin/users/:id
-// @note    Granting admin privileges is NOT allowed here — it must go through
-//          the email-OTP approval flow (/:id/role-otp/request + /verify).
+// @note    GRANTING a staff role (admin/manager) is NOT allowed here — it must
+//          go through the email-OTP approval flow. Removing staff roles,
+//          deactivation, and profile edits pass through.
 router.put('/:id', async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
@@ -113,22 +116,24 @@ router.put('/:id', async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    const { name, phone, role, isAdmin, isActive } = req.body;
+    const { name, phone, roles, isActive } = req.body;
 
-    if (escalationRole(user, req.body)) {
-      return res.status(403).json({
-        message: 'Granting admin access requires email approval. Use the approval flow.',
-        code: 'OTP_REQUIRED',
-      });
+    if (roles !== undefined) {
+      const requested = normalizeRoles(roles);
+      const added = escalatedRoles(user, requested);
+      if (added.length > 0) {
+        return res.status(403).json({
+          message: 'Granting a staff role requires email approval. Use the approval flow.',
+          code: 'OTP_REQUIRED',
+          roles: added,
+        });
+      }
+      // No staff role added — safe to apply (this covers demotions and re-ordering).
+      user.roles = requested;
     }
 
     if (name !== undefined) user.name = name;
     if (phone !== undefined) user.phone = phone;
-    if (role !== undefined && ['customer', 'admin', 'superadmin'].includes(role)) {
-      user.role = role;
-      user.isAdmin = role === 'admin' || role === 'superadmin';
-    }
-    if (isAdmin !== undefined) user.isAdmin = !!isAdmin;
     if (isActive !== undefined) user.isActive = !!isActive;
 
     const updated = await user.save({ validateBeforeSave: false });
@@ -140,7 +145,7 @@ router.put('/:id', async (req, res, next) => {
   }
 });
 
-// @desc    Request an OTP (emailed to the approver) to promote a user to admin
+// @desc    Request an OTP (emailed to the approver) to grant a staff role
 // @route   POST /api/admin/users/:id/role-otp/request   { role }
 router.post('/:id/role-otp/request', otpRequestLimiter, async (req, res, next) => {
   try {
@@ -150,12 +155,12 @@ router.post('/:id/role-otp/request', otpRequestLimiter, async (req, res, next) =
     }
 
     const role = req.body.role;
-    if (!PRIVILEGED_ROLES.includes(role)) {
-      return res.status(400).json({ message: 'A privileged role (admin or superadmin) is required' });
+    if (!STAFF_ROLES.includes(role)) {
+      return res.status(400).json({ message: 'A staff role (admin or manager) is required' });
     }
 
-    if (!escalationRole(user, { role })) {
-      return res.status(400).json({ message: 'This user already holds that access.' });
+    if ((user.roles || []).includes(role)) {
+      return res.status(400).json({ message: 'This user already holds that role.' });
     }
 
     await AdminOtp.deleteMany({ targetUser: user._id, consumed: false });
@@ -199,7 +204,7 @@ router.post('/:id/role-otp/request', otpRequestLimiter, async (req, res, next) =
   }
 });
 
-// @desc    Verify the OTP and commit the admin promotion
+// @desc    Verify the OTP and grant the staff role (adds it to the user's roles)
 // @route   POST /api/admin/users/:id/role-otp/verify   { role, code }
 router.post('/:id/role-otp/verify', async (req, res, next) => {
   try {
@@ -209,7 +214,7 @@ router.post('/:id/role-otp/verify', async (req, res, next) => {
     }
 
     const { role, code } = req.body;
-    if (!PRIVILEGED_ROLES.includes(role) || !code) {
+    if (!STAFF_ROLES.includes(role) || !code) {
       return res.status(400).json({ message: 'Role and code are required' });
     }
 
@@ -239,8 +244,8 @@ router.post('/:id/role-otp/verify', async (req, res, next) => {
     otp.consumed = true;
     await otp.save();
 
-    user.role = role;
-    user.isAdmin = true;
+    // Grant the role by ADDING it (the pre-save hook dedupes + keeps 'user').
+    user.roles = [...new Set([...(user.roles || []), role])];
     const updated = await user.save({ validateBeforeSave: false });
     const obj = updated.toObject();
     delete obj.password;
