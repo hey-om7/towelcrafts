@@ -563,6 +563,18 @@
   .navbar__links { display: none; }
   .navbar__mobile-toggle { display: flex; }
   .navbar__profile-name { display: none; }
+  .navbar__profile-chevron { display: none; }
+
+  /* With name + chevron hidden, tighten the profile button into a clean
+     circle around the avatar (equal padding, no asymmetric pill shape). */
+  .navbar__profile-btn {
+    padding: var(--space-1);
+    gap: 0;
+    border-radius: 50%;
+  }
+
+  /* Bring the cart closer to the profile (cart shifts right toward it). */
+  .navbar__actions { gap: var(--space-3); }
 
   /* Hamburger on the LEFT in mobile view.
      .navbar__inner is a 3-col grid (logo | center | actions); the toggle
