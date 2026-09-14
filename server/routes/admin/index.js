@@ -22,6 +22,7 @@ router.use('/categories', require('./adminCategoryRoutes'));
 router.use('/orders', require('./adminOrderRoutes'));
 router.use('/users', require('./adminUserRoutes'));
 router.use('/feedbacks', require('./adminFeedbackRoutes'));
+router.use('/tickets', require('./adminTicketRoutes'));
 router.use('/stats', require('./adminStatsRoutes'));
 router.use('/uploads', require('./adminUploadRoutes'));
 

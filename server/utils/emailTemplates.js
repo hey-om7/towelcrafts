@@ -783,4 +783,316 @@ function adminRoleOtpEmail({
   return { subject, html, text, attachments: [getLogoAttachment()] };
 }
 
-module.exports = { orderConfirmationEmail, orderStatusEmail, adminRoleOtpEmail, EMAILABLE_STATUSES, getLogoAttachment };
+// ── Support tickets ──────────────────────────────────────────────
+
+const TICKET_CATEGORY_LABELS = {
+  order: 'Order issue',
+  product: 'Product',
+  delivery: 'Delivery',
+  payment: 'Payment',
+  return: 'Return / refund',
+  other: 'General',
+};
+
+const TICKET_PRIORITY_LABELS = {
+  low: 'Low',
+  normal: 'Normal',
+  high: 'High',
+  urgent: 'Urgent',
+};
+
+// A labelled row used inside the ticket detail cards.
+function ticketMetaRow(label, value) {
+  return `
+    <tr>
+      <td style="padding:7px 0;font-family:${SANS};font-size:13px;color:${C.textLight};width:38%;vertical-align:top;">${esc(label)}</td>
+      <td style="padding:7px 0;font-family:${SANS};font-size:14px;color:${C.ink};font-weight:600;">${esc(value)}</td>
+    </tr>`;
+}
+
+/**
+ * Notify staff (admin/manager) that a new support ticket was raised.
+ * Sent to each staff recipient; includes the full ticket detail so they can
+ * triage from their inbox.
+ *
+ * @param {Object} p
+ * @param {Object} p.ticket   Saved Ticket document (plain or mongoose doc)
+ * @param {string} [p.storeUrl]
+ */
+function ticketCreatedEmail({ ticket, storeUrl }) {
+  const store = storeUrl || process.env.STORE_URL || 'http://localhost:3000';
+  const ref = ticket.ticketNumber || String(ticket._id || '').slice(-8).toUpperCase();
+  const categoryLabel = TICKET_CATEGORY_LABELS[ticket.category] || 'General';
+  const priorityLabel = TICKET_PRIORITY_LABELS[ticket.priority] || 'Normal';
+  const priorityColor =
+    ticket.priority === 'urgent' || ticket.priority === 'high' ? C.error : C.brass;
+
+  const subject = `New support ticket ${ref} · ${ticket.subject || categoryLabel}`;
+
+  const metaRows =
+    ticketMetaRow('From', ticket.name || '—') +
+    ticketMetaRow('Email', ticket.email || '—') +
+    (ticket.phone ? ticketMetaRow('Phone', ticket.phone) : '') +
+    (ticket.orderNumber ? ticketMetaRow('Order', ticket.orderNumber) : '') +
+    ticketMetaRow('Category', categoryLabel);
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <title>${esc(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:${C.paperWarm};-webkit-font-smoothing:antialiased;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:${C.paperWarm};">
+    ${esc(ticket.name || 'A customer')} raised ticket ${esc(ref)} — ${esc(ticket.subject || '')}
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paperWarm};padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background-color:${C.card};border:1px solid ${C.border};border-radius:4px;overflow:hidden;">
+
+          <!-- Header band -->
+          <tr>
+            <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
+              ${brandLockup('TowelCrafts · Support')}
+              <div style="font-family:${SERIF};font-size:28px;font-weight:400;color:${C.white};line-height:1.15;">
+                New Support Ticket
+              </div>
+              <div style="width:44px;height:2px;background-color:${C.brass};margin:16px auto 0;"></div>
+            </td>
+          </tr>
+
+          <!-- Meta -->
+          <tr>
+            <td style="padding:30px 40px 0;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paper};border:1px solid ${C.borderLight};border-radius:4px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <span style="display:block;font-family:${SANS};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${C.textMuted};margin-bottom:4px;">Ticket</span>
+                    <span style="display:block;font-family:${SERIF};font-size:18px;color:${C.forest};font-weight:400;">${esc(ref)}</span>
+                  </td>
+                  <td align="right" style="padding:16px 20px;">
+                    <span style="display:block;font-family:${SANS};font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:${C.textMuted};margin-bottom:6px;">Priority</span>
+                    <span style="display:inline-block;padding:5px 12px;border-radius:2px;font-family:${SANS};font-size:12px;font-weight:600;letter-spacing:0.04em;color:${C.white};background-color:${priorityColor};">${esc(priorityLabel)}</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Subject + message -->
+          <tr>
+            <td style="padding:26px 40px 0;">
+              <div style="font-family:${SANS};font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:${C.brass};font-weight:600;padding-bottom:8px;border-bottom:2px solid ${C.forest};">
+                ${esc(ticket.subject || 'Support request')}
+              </div>
+              <p style="margin:14px 0 0;font-family:${SANS};font-size:15px;line-height:1.7;color:${C.ink};white-space:pre-wrap;">${esc(ticket.message || '')}</p>
+            </td>
+          </tr>
+
+          <!-- Contact details -->
+          <tr>
+            <td style="padding:26px 40px 0;">
+              <div style="font-family:${SANS};font-size:11px;letter-spacing:0.16em;text-transform:uppercase;color:${C.textMuted};font-weight:600;margin-bottom:8px;">Contact details</div>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                ${metaRows}
+              </table>
+            </td>
+          </tr>
+
+          <!-- CTA -->
+          <tr>
+            <td align="center" style="padding:32px 40px 8px;">
+              <table role="presentation" cellpadding="0" cellspacing="0">
+                <tr>
+                  <td style="border-radius:2px;background-color:${C.forest};">
+                    <a href="${esc(store)}/admin" target="_blank"
+                       style="display:inline-block;padding:14px 34px;font-family:${SANS};font-size:14px;font-weight:600;letter-spacing:0.04em;color:${C.white};text-decoration:none;">
+                      Open in Admin
+                    </a>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Note -->
+          <tr>
+            <td style="padding:20px 40px 36px;">
+              <p style="margin:0;font-family:${SANS};font-size:13px;line-height:1.6;color:${C.textLight};text-align:center;">
+                You can reply directly to <a href="mailto:${esc(ticket.email || '')}" style="color:${C.forest};">${esc(ticket.email || 'the customer')}</a>, or resolve the ticket from the admin panel.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:${C.paper};border-top:1px solid ${C.borderLight};padding:26px 40px;text-align:center;">
+              <div style="font-family:${SERIF};font-size:16px;color:${C.forest};margin-bottom:6px;">TowelCrafts</div>
+              <p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.6;color:${C.textMuted};">
+                Automated notification from the TowelCrafts support desk.<br>
+                © ${new Date().getFullYear()} TowelCrafts. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const textLines = [
+    `TOWELCRAFTS — NEW SUPPORT TICKET`,
+    ``,
+    `Ticket: ${ref}`,
+    `Priority: ${priorityLabel}`,
+    `Category: ${categoryLabel}`,
+    ``,
+    `Subject: ${ticket.subject || ''}`,
+    ``,
+    `${ticket.message || ''}`,
+    ``,
+    `— Contact —`,
+    `Name: ${ticket.name || '—'}`,
+    `Email: ${ticket.email || '—'}`,
+    ticket.phone ? `Phone: ${ticket.phone}` : '',
+    ticket.orderNumber ? `Order: ${ticket.orderNumber}` : '',
+    ``,
+    `Open in admin: ${store}/admin`,
+    ``,
+    `© ${new Date().getFullYear()} TowelCrafts`,
+  ].filter((l) => l !== '');
+
+  return { subject, html, text: textLines.join('\n'), attachments: [getLogoAttachment()] };
+}
+
+/**
+ * Notify the customer that their ticket has been resolved (or updated with a
+ * resolution note). Sent when staff enters a resolution.
+ *
+ * @param {Object} p
+ * @param {Object} p.ticket   Saved Ticket document (plain or mongoose doc)
+ * @param {string} p.resolution  The resolution note to convey
+ * @param {string} [p.storeUrl]
+ */
+function ticketResolutionEmail({ ticket, resolution, storeUrl }) {
+  const store = storeUrl || process.env.STORE_URL || 'http://localhost:3000';
+  const ref = ticket.ticketNumber || String(ticket._id || '').slice(-8).toUpperCase();
+  const firstName = (ticket.name || 'there').trim().split(/\s+/)[0] || 'there';
+  const note = resolution || ticket.resolution || '';
+  const isClosed = ticket.status === 'closed' || ticket.status === 'resolved';
+
+  const subject = `Update on your support ticket ${ref}`;
+
+  const html = `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <title>${esc(subject)}</title>
+</head>
+<body style="margin:0;padding:0;background-color:${C.paperWarm};-webkit-font-smoothing:antialiased;">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;color:${C.paperWarm};">
+    We've responded to your support ticket ${esc(ref)}.
+  </div>
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:${C.paperWarm};padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="width:600px;max-width:100%;background-color:${C.card};border:1px solid ${C.border};border-radius:4px;overflow:hidden;">
+
+          <!-- Header band -->
+          <tr>
+            <td style="background-color:${C.forestDark};padding:36px 40px 30px;text-align:center;">
+              ${brandLockup('TowelCrafts · Support')}
+              <div style="font-family:${SERIF};font-size:28px;font-weight:400;color:${C.white};line-height:1.15;">
+                ${isClosed ? 'Ticket Resolved' : 'Ticket Update'}
+              </div>
+              <div style="width:44px;height:2px;background-color:${C.brass};margin:16px auto 0;"></div>
+            </td>
+          </tr>
+
+          <!-- Intro -->
+          <tr>
+            <td style="padding:36px 40px 8px;">
+              <p style="margin:0 0 14px;font-family:${SERIF};font-size:22px;color:${C.forest};font-weight:400;">
+                Hello ${esc(firstName)},
+              </p>
+              <p style="margin:0;font-family:${SANS};font-size:15px;line-height:1.65;color:${C.textSecondary};">
+                Thank you for reaching out. Here's an update on your support ticket
+                <strong style="color:${C.ink};">${esc(ref)}</strong>${ticket.subject ? ` regarding “${esc(ticket.subject)}”` : ''}.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Resolution -->
+          <tr>
+            <td style="padding:26px 40px 0;">
+              <div style="font-family:${SANS};font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:${C.brass};font-weight:600;padding-bottom:8px;border-bottom:2px solid ${C.forest};">
+                Our response
+              </div>
+              <p style="margin:14px 0 0;font-family:${SANS};font-size:15px;line-height:1.7;color:${C.ink};white-space:pre-wrap;">${esc(note)}</p>
+            </td>
+          </tr>
+
+          <!-- Note -->
+          <tr>
+            <td style="padding:30px 40px 36px;">
+              <p style="margin:0;font-family:${SANS};font-size:13px;line-height:1.6;color:${C.textLight};text-align:center;">
+                Still need help? Just reply to this email and we'll pick up right where we left off.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:${C.paper};border-top:1px solid ${C.borderLight};padding:26px 40px;text-align:center;">
+              <div style="font-family:${SERIF};font-size:16px;color:${C.forest};margin-bottom:6px;">TowelCrafts</div>
+              <p style="margin:0;font-family:${SANS};font-size:12px;line-height:1.6;color:${C.textMuted};">
+                Considered towels, woven for everyday ritual.<br>
+                © ${new Date().getFullYear()} TowelCrafts. All rights reserved.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+  const textLines = [
+    `TOWELCRAFTS — ${isClosed ? 'TICKET RESOLVED' : 'TICKET UPDATE'}`,
+    ``,
+    `Hello ${firstName},`,
+    ``,
+    `Update on your support ticket ${ref}${ticket.subject ? ` regarding "${ticket.subject}"` : ''}:`,
+    ``,
+    `${note}`,
+    ``,
+    `Still need help? Just reply to this email.`,
+    ``,
+    `© ${new Date().getFullYear()} TowelCrafts`,
+  ].filter((l) => l !== undefined);
+
+  return { subject, html, text: textLines.join('\n'), attachments: [getLogoAttachment()] };
+}
+
+module.exports = {
+  orderConfirmationEmail,
+  orderStatusEmail,
+  adminRoleOtpEmail,
+  EMAILABLE_STATUSES,
+  getLogoAttachment,
+  ticketCreatedEmail,
+  ticketResolutionEmail,
+};

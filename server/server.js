@@ -139,6 +139,7 @@ app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/feedbacks', require('./routes/feedbackRoutes'));
+app.use('/api/tickets', require('./routes/ticketRoutes'));
 
 // Admin API — fully separated namespace, admin-only on every route (incl. GET).
 app.use('/api/admin', require('./routes/admin'));

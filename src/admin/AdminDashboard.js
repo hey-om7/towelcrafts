@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   FaBox, FaShoppingCart, FaSignOutAlt, FaArrowLeft,
-  FaChartPie, FaTags, FaUsers, FaStar, FaLifeRing, FaFileAlt, FaWallet, FaBars, FaTimes,
+  FaChartPie, FaTags, FaUsers, FaStar, FaLifeRing, FaFileAlt, FaWallet, FaBars, FaTimes, FaTicketAlt,
 } from "react-icons/fa";
 import Overview from "./Overview";
 import { ProductList } from "./ProductList";
@@ -13,6 +13,7 @@ import Payments from "./Payments";
 import Customers from "./Customers";
 import Reviews from "./Reviews";
 import Support from "./Support";
+import Tickets from "./Tickets";
 import Reports from "./Reports";
 import "./admin.css";
 
@@ -26,6 +27,7 @@ const TABS = [
   { id: "customers", label: "Customers", icon: <FaUsers />, group: "People", sub: "Manage users, access, orders, and addresses" },
   { id: "reviews", label: "Reviews", icon: <FaStar />, group: "People", sub: "Moderate product reviews and ratings" },
   { id: "support", label: "Support", icon: <FaLifeRing />, group: "People", sub: "Customer help, complaints, and suggestions" },
+  { id: "tickets", label: "Tickets", icon: <FaTicketAlt />, group: "People", sub: "Support tickets raised from the contact page" },
 ];
 
 const GROUPS = ["Analyse", "Sell", "Catalog", "People"];
@@ -181,6 +183,7 @@ export function AdminDashboard() {
         {activeTab === "customers" && <Customers />}
         {activeTab === "reviews" && <Reviews />}
         {activeTab === "support" && <Support />}
+        {activeTab === "tickets" && <Tickets />}
       </main>
     </div>
   );
