@@ -408,14 +408,14 @@
 .mobile-menu__panel {
   position: absolute;
   top: 0;
-  right: 0;
+  left: 0;
   width: min(88vw, 380px);
   height: 100%;
   background: var(--color-bg-card);
-  border-left: 1px solid var(--color-border-light);
+  border-right: 1px solid var(--color-border-light);
   display: flex;
   flex-direction: column;
-  transform: translateX(100%);
+  transform: translateX(-100%);
   transition: transform 0.45s var(--ease-out);
   box-shadow: var(--shadow-2xl);
 }
@@ -563,7 +563,22 @@
   .navbar__links { display: none; }
   .navbar__mobile-toggle { display: flex; }
   .navbar__profile-name { display: none; }
-  .navbar__inner { padding: 0 var(--space-5); }
+
+  /* Hamburger on the LEFT in mobile view.
+     .navbar__inner is a 3-col grid (logo | center | actions); the toggle
+     lives inside .navbar__actions on the right. Anchor it to the left edge
+     of the inner container and reserve space so the logo doesn't collide. */
+  .navbar__inner {
+    padding: 0 var(--space-5);
+    position: relative;
+    padding-left: calc(var(--space-5) + 2.75rem);
+  }
+  .navbar__mobile-toggle {
+    position: absolute;
+    left: var(--space-5);
+    top: 50%;
+    transform: translateY(-50%);
+  }
 }
 
 @media (max-width: 480px) {

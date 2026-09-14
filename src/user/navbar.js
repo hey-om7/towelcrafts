@@ -230,63 +230,6 @@ function NavBar() {
               </Link>
             </li>
           </ul>
-
-          <div className="mobile-menu__footer">
-            {userInfo ? (
-              <>
-                <div className="mobile-menu__user">
-                  <div className="navbar__avatar navbar__avatar--lg">
-                    {userInfo.name ? userInfo.name.charAt(0).toUpperCase() : "U"}
-                  </div>
-                  <div>
-                    <p className="mobile-menu__user-name">{userInfo.name}</p>
-                    <p className="mobile-menu__user-email">{userInfo.email}</p>
-                  </div>
-                </div>
-                {isStaffUser && (
-                  <Link
-                    to="/admin"
-                    className="mobile-menu__action-btn"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    Admin Panel
-                  </Link>
-                )}
-                <Link
-                  to="/account"
-                  className="mobile-menu__action-btn"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  My Account
-                </Link>
-                <Link
-                  to="/account?tab=orders"
-                  className="mobile-menu__action-btn"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  My Orders
-                </Link>
-                <Link
-                  to="/account?tab=addresses"
-                  className="mobile-menu__action-btn"
-                  onClick={() => setMobileOpen(false)}
-                >
-                  Addresses
-                </Link>
-                <button onClick={handleLogout} className="mobile-menu__logout-btn">
-                  Sign Out
-                </button>
-              </>
-            ) : (
-              <Link
-                to="/login"
-                className="mobile-menu__login-btn"
-                onClick={() => setMobileOpen(false)}
-              >
-                Sign In
-              </Link>
-            )}
-          </div>
         </div>
       </div>
     </>
