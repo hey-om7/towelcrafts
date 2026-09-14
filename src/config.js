@@ -2,8 +2,14 @@
 // Values are read from environment variables (set in .env) with sensible
 // development fallbacks so the app works out-of-the-box locally.
 
+// API base URL.
+//   - Development: falls back to the local backend on port 5001.
+//   - Production (single Render service): defaults to '' so requests hit the
+//     same origin that serves the built frontend. Override with
+//     REACT_APP_API_URL only when the backend is deployed separately.
 export const API_URL =
-  process.env.REACT_APP_API_URL || 'http://localhost:5001';
+  process.env.REACT_APP_API_URL ??
+  (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5001');
 
 // Base for the separated admin API. Every endpoint under here is admin-only on
 // the server (auth enforced on every method, including GET). Admin panel

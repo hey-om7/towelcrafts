@@ -18,9 +18,17 @@
     "recharts": "^3.10.1",
     "web-vitals": "^2.1.4"
   },
+  "devDependencies": {
+    "concurrently": "^9.2.4",
+    "cross-env": "^7.0.3"
+  },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "npm --prefix server start",
+    "dev": "concurrently -n client,server -c cyan,magenta \"react-scripts start\" \"npm --prefix server run dev\"",
+    "client": "react-scripts start",
+    "server": "npm --prefix server run dev",
     "build": "react-scripts build",
+    "render-build": "npm install --prefix server && npm run build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },

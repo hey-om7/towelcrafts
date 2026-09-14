@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -144,16 +145,7 @@ app.use('/api/tickets', require('./routes/ticketRoutes'));
 // Admin API — fully separated namespace, admin-only on every route (incl. GET).
 app.use('/api/admin', require('./routes/admin'));
 
-// Health checks
-app.get('/', (req, res) => {
-  res.json({
-    status: 'healthy',
-    message: 'TowelCrafts API',
-    version: '2.0.0',
-    timestamp: new Date().toISOString(),
-  });
-});
-
+// Health check (JSON) — always available, independent of frontend hosting.
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'healthy',
@@ -161,6 +153,34 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+// ─────────────────────────────────────────────
+// Serve the built React frontend (single-service deploy, e.g. Render)
+// ─────────────────────────────────────────────
+// In production the CRA build lives one level up from /server. Express serves
+// those static assets and falls back to index.html for client-side routing so
+// deep links (e.g. /products/123) resolve to the SPA rather than a 404.
+const clientBuildPath = path.join(__dirname, '..', 'build');
+
+if (isProduction) {
+  app.use(express.static(clientBuildPath));
+
+  // SPA fallback: any non-API GET that isn't a static file serves index.html.
+  app.get(/^\/(?!api\/).*/, (req, res) => {
+    res.sendFile(path.join(clientBuildPath, 'index.html'));
+  });
+} else {
+  // In development the frontend runs on the CRA dev server, so the root is a
+  // simple API status page.
+  app.get('/', (req, res) => {
+    res.json({
+      status: 'healthy',
+      message: 'TowelCrafts API',
+      version: '2.0.0',
+      timestamp: new Date().toISOString(),
+    });
+  });
+}
 
 // Error handling (must be last)
 app.use(notFound);
