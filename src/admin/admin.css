@@ -1132,3 +1132,53 @@
   gap: var(--space-2);
   margin-top: var(--space-3);
 }
+
+
+/* ── Admin access-denied screen ─────────── */
+.admin-denied {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: var(--color-bg-warm);
+}
+.admin-denied__card {
+  max-width: 30rem;
+  width: 100%;
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-10) var(--space-8);
+  text-align: center;
+  box-shadow: var(--shadow-md);
+}
+.admin-denied__badge {
+  display: inline-block;
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-error);
+  background: #fef2f2;
+  border-radius: var(--radius-sm);
+  padding: var(--space-1) var(--space-3);
+  margin-bottom: var(--space-5);
+}
+.admin-denied__title {
+  font-size: var(--text-2xl);
+  font-weight: 400;
+  color: var(--color-primary-dark);
+  margin: 0 0 var(--space-3);
+}
+.admin-denied__text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-relaxed);
+  color: var(--color-text-light);
+  margin: 0 0 var(--space-8);
+}
+.admin-denied__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FaStar } from "react-icons/fa";
-import { API_URL } from "../config";
+import { ADMIN_API } from "../config";
 
 export default function Feedbacks() {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -10,7 +10,7 @@ export default function Feedbacks() {
   const fetchFeedbacks = async () => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const response = await fetch(`${API_URL}/api/feedbacks?limit=200`, {
+      const response = await fetch(`${ADMIN_API}/feedbacks?limit=200`, {
         headers: { Authorization: `Bearer ${userInfo?.token}` },
       });
 
@@ -33,7 +33,7 @@ export default function Feedbacks() {
   const updateStatus = async (id, status) => {
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const res = await fetch(`${API_URL}/api/feedbacks/${id}/status`, {
+      const res = await fetch(`${ADMIN_API}/feedbacks/${id}/status`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",

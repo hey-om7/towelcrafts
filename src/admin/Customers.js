@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FaEye, FaTimes, FaTrashAlt, FaPen } from "react-icons/fa";
-import { API_URL } from "../config";
+import { ADMIN_API, isAuthError } from "../config";
 
 const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
@@ -18,7 +18,8 @@ export default function Customers() {
 
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/users?limit=200`, { headers: authHeaders() });
+      const res = await fetch(`${ADMIN_API}/users?limit=200`, { headers: authHeaders() });
+      if (isAuthError(res)) throw new Error("You don't have permission to view customers.");
       if (!res.ok) throw new Error(`Failed to load customers (${res.status})`);
       const data = await res.json();
       setUsers(data.users || data);
@@ -101,7 +102,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/users/${userId}`, { headers: authHeaders() });
+      const res = await fetch(`${ADMIN_API}/users/${userId}`, { headers: authHeaders() });
       if (res.ok) setData(await res.json());
     } finally {
       setLoading(false);
@@ -113,7 +114,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
 
   const saveUser = async (patch) => {
     setSaving(true);
-    const res = await fetch(`${API_URL}/api/users/${userId}`, {
+    const res = await fetch(`${ADMIN_API}/users/${userId}`, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(patch),
@@ -150,7 +151,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
   const requestOtp = async () => {
     setOtp((o) => ({ ...o, busy: true, error: null }));
     try {
-      const res = await fetch(`${API_URL}/api/users/${userId}/role-otp/request`, {
+      const res = await fetch(`${ADMIN_API}/users/${userId}/role-otp/request`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({ role: otp.role }),
@@ -172,7 +173,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
     }
     setOtp((o) => ({ ...o, busy: true, error: null }));
     try {
-      const res = await fetch(`${API_URL}/api/users/${userId}/role-otp/verify`, {
+      const res = await fetch(`${ADMIN_API}/users/${userId}/role-otp/verify`, {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({ role: otp.role, code }),
@@ -191,7 +192,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
   const cancelOtp = () => setOtp(null);
 
   const deleteAddress = async (addrId) => {
-    const res = await fetch(`${API_URL}/api/users/${userId}/address/${addrId}`, {
+    const res = await fetch(`${ADMIN_API}/users/${userId}/address/${addrId}`, {
       method: "DELETE",
       headers: authHeaders(),
     });
@@ -199,7 +200,7 @@ function CustomerModal({ userId, onClose, onUserPatched, authHeaders }) {
   };
 
   const saveAddress = async (addrId, patch) => {
-    const res = await fetch(`${API_URL}/api/users/${userId}/address/${addrId}`, {
+    const res = await fetch(`${ADMIN_API}/users/${userId}/address/${addrId}`, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(patch),

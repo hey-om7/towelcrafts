@@ -5,6 +5,20 @@
 export const API_URL =
   process.env.REACT_APP_API_URL || 'http://localhost:5001';
 
+// Base for the separated admin API. Every endpoint under here is admin-only on
+// the server (auth enforced on every method, including GET). Admin panel
+// components should build URLs from this, e.g. `${ADMIN_API}/users`.
+export const ADMIN_API = `${API_URL}/api/admin`;
+
+/**
+ * True when a fetch Response indicates the caller isn't allowed: 401 (not
+ * authenticated) or 403 (authenticated but not an admin). Admin views use this
+ * to show a clear access-denied message instead of a raw status code.
+ */
+export function isAuthError(res) {
+  return res && (res.status === 401 || res.status === 403);
+}
+
 export const GOOGLE_CLIENT_ID =
   process.env.REACT_APP_GOOGLE_CLIENT_ID || '';
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FaPlus, FaEdit, FaTrash } from "react-icons/fa";
-import { API_URL, imageUrl } from "../config";
+import { API_URL, ADMIN_API, imageUrl } from "../config";
 import { ImageUploader } from "./ImageUploader";
 
 function CategoryForm({ category, onCancel, onSaved }) {
@@ -36,7 +36,7 @@ function CategoryForm({ category, onCancel, onSaved }) {
         id: Number(form.id),
         displayOrder: Number(form.displayOrder),
       };
-      const url = isNew ? `${API_URL}/api/categories` : `${API_URL}/api/categories/${existing._id}`;
+      const url = isNew ? `${ADMIN_API}/categories` : `${ADMIN_API}/categories/${existing._id}`;
       const res = await fetch(url, {
         method: isNew ? "POST" : "PUT",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${userInfo.token}` },
@@ -132,7 +132,7 @@ export default function CategoryManager() {
     if (!window.confirm("Delete this category?")) return;
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const res = await fetch(`${API_URL}/api/categories/${id}`, {
+      const res = await fetch(`${ADMIN_API}/categories/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${userInfo.token}` },
       });

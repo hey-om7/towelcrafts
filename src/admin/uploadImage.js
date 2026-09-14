@@ -1,4 +1,4 @@
-import { API_URL } from "../config";
+import { ADMIN_API } from "../config";
 
 function authToken() {
   try {
@@ -23,7 +23,7 @@ export async function uploadImage(file, folder = "products") {
   fd.append("file", file);
   fd.append("folder", folder);
 
-  const res = await fetch(`${API_URL}/api/uploads`, {
+  const res = await fetch(`${ADMIN_API}/uploads`, {
     method: "POST",
     headers: { Authorization: `Bearer ${authToken()}` }, // no Content-Type — browser sets multipart boundary
     body: fd,
@@ -49,7 +49,7 @@ export async function uploadImage(file, folder = "products") {
  */
 export async function uploadsEnabled() {
   try {
-    const res = await fetch(`${API_URL}/api/uploads/status`, {
+    const res = await fetch(`${ADMIN_API}/uploads/status`, {
       headers: { Authorization: `Bearer ${authToken()}` },
     });
     if (!res.ok) return false;

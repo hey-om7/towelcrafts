@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { API_URL } from "../config";
+import { ADMIN_API, isAuthError } from "../config";
 
 const PAYMENT_STATUSES = ["pending", "partial", "completed", "refunded", "failed"];
 const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
@@ -17,7 +17,8 @@ export default function Payments() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/orders?limit=200`, { headers: authHeaders() });
+      const res = await fetch(`${ADMIN_API}/orders?limit=200`, { headers: authHeaders() });
+      if (isAuthError(res)) throw new Error("You don't have permission to view payments.");
       if (!res.ok) throw new Error(`Failed to load payments (${res.status})`);
       const data = await res.json();
       setOrders(data.orders || data);
@@ -31,7 +32,7 @@ export default function Payments() {
   useEffect(() => { load(); }, [load]);
 
   const setPayment = async (id, patch) => {
-    const res = await fetch(`${API_URL}/api/orders/${id}/status`, {
+    const res = await fetch(`${ADMIN_API}/orders/${id}/status`, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(patch),

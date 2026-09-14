@@ -7,7 +7,7 @@ import {
   FaRupeeSign, FaShoppingCart, FaUsers, FaBox,
   FaStar, FaChartLine, FaExclamationTriangle,
 } from "react-icons/fa";
-import { API_URL } from "../config";
+import { ADMIN_API, isAuthError } from "../config";
 
 // Theme palette for charts
 const COLORS = ["#566A4B", "#9B7B4A", "#7C8E6E", "#7C6138", "#33402B", "#B89A6B"];
@@ -54,9 +54,10 @@ export default function Overview() {
     const fetchStats = async () => {
       try {
         const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-        const res = await fetch(`${API_URL}/api/stats/overview`, {
+        const res = await fetch(`${ADMIN_API}/stats/overview`, {
           headers: { Authorization: `Bearer ${userInfo?.token}` },
         });
+        if (isAuthError(res)) throw new Error("You don't have permission to view analytics.");
         if (!res.ok) throw new Error(`Failed to load analytics (${res.status})`);
         setData(await res.json());
       } catch (err) {

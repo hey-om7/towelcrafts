@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  FaBox, FaShoppingCart, FaCommentDots, FaSignOutAlt, FaArrowLeft,
+  FaBox, FaShoppingCart, FaSignOutAlt, FaArrowLeft,
   FaChartPie, FaTags, FaUsers, FaStar, FaLifeRing, FaFileAlt, FaWallet, FaBars, FaTimes,
 } from "react-icons/fa";
 import Overview from "./Overview";
@@ -36,23 +36,66 @@ export function AdminDashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
-    if (!userInfo || !userInfo.isAdmin) {
-      navigate("/");
-    }
-  }, [navigate]);
-
-  const handleTabChange = (tab) => {
-    setActiveTab(tab);
-    setEditingProduct(null);
-    setDrawerOpen(false);
-  };
+  // Determine access from the stored session. This mirrors the server's admin
+  // rule (isAdmin OR role admin/superadmin) so the client gate never disagrees
+  // with the API. Rendered as a clear screen — not a silent redirect.
+  const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
+  const isLoggedIn = Boolean(userInfo && userInfo.token);
+  const isAdminUser =
+    isLoggedIn &&
+    (userInfo.isAdmin === true ||
+      userInfo.role === "admin" ||
+      userInfo.role === "superadmin");
 
   const handleLogout = () => {
     localStorage.removeItem("userInfo");
     navigate("/");
     window.location.reload();
+  };
+
+  // Gate: show an explicit access screen instead of rendering the dashboard.
+  if (!isAdminUser) {
+    return (
+      <div className="admin-denied">
+        <div className="admin-denied__card">
+          <span className="admin-denied__badge">Restricted area</span>
+          <h1 className="admin-denied__title">
+            {isLoggedIn ? "You don't have admin access" : "Please sign in"}
+          </h1>
+          <p className="admin-denied__text">
+            {isLoggedIn ? (
+              <>
+                You're signed in{userInfo?.email ? ` as ${userInfo.email}` : ""}, but this
+                account doesn't have administrator rights. If you believe this is a
+                mistake, contact an existing administrator to request access.
+              </>
+            ) : (
+              <>You need to sign in with an administrator account to view this area.</>
+            )}
+          </p>
+          <div className="admin-denied__actions">
+            <Link to="/" className="admin__btn admin__btn--ghost">
+              <FaArrowLeft /> Back to store
+            </Link>
+            {isLoggedIn ? (
+              <button className="admin__btn admin__btn--primary" onClick={handleLogout}>
+                Sign in as a different user
+              </button>
+            ) : (
+              <Link to="/login" className="admin__btn admin__btn--primary">
+                Sign in
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setEditingProduct(null);
+    setDrawerOpen(false);
   };
 
   const activeMeta = TABS.find((t) => t.id === activeTab);

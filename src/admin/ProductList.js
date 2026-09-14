@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
-import { API_URL, imageUrl } from "../config";
+import { API_URL, ADMIN_API, imageUrl } from "../config";
 
 export function ProductList({ onEdit }) {
   const [products, setProducts] = useState([]);
@@ -28,7 +28,7 @@ export function ProductList({ onEdit }) {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     try {
       const userInfo = JSON.parse(localStorage.getItem("userInfo"));
-      const res = await fetch(`${API_URL}/api/products/${id}`, {
+      const res = await fetch(`${ADMIN_API}/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${userInfo.token}` },
       });

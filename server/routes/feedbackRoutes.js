@@ -2,7 +2,12 @@ const express = require('express');
 const router = express.Router();
 const Feedback = require('../models/Feedback');
 const Product = require('../models/Product');
-const { protect, admin } = require('../middleware/authMiddleware');
+const { protect } = require('../middleware/authMiddleware');
+
+// NOTE: Admin feedback moderation (list all, update status, delete) lives in
+// the separated admin namespace: server/routes/admin/adminFeedbackRoutes.js
+// (mounted at /api/admin/feedbacks). This router serves public product reviews
+// and customer review submission only.
 
 // Recompute a product's average rating and review count from its reviews.
 async function recomputeProductRating(product) {
@@ -95,38 +100,6 @@ router.post('/', protect, async (req, res, next) => {
   }
 });
 
-// @desc    Get all feedbacks
-// @route   GET /api/feedbacks
-// @access  Private/Admin
-router.get('/', protect, admin, async (req, res, next) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 50;
-    const skip = (page - 1) * limit;
-    const status = req.query.status;
-
-    const filter = {};
-    if (status) filter.status = status;
-
-    const total = await Feedback.countDocuments(filter);
-    const feedbacks = await Feedback.find(filter)
-      .populate('user', 'name email')
-      .populate('product', 'title')
-      .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit);
-
-    res.json({
-      feedbacks,
-      page,
-      pages: Math.ceil(total / limit),
-      total,
-    });
-  } catch (error) {
-    next(error);
-  }
-});
-
 // @desc    Get product reviews
 // @route   GET /api/feedbacks/product/:productId
 // @access  Public
@@ -158,63 +131,6 @@ router.get('/product/:productId/mine', protect, async (req, res, next) => {
     });
 
     res.json(review || null);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// @desc    Update feedback status
-// @route   PUT /api/feedbacks/:id/status
-// @access  Private/Admin
-router.put('/:id/status', protect, admin, async (req, res, next) => {
-  try {
-    const { status } = req.body;
-
-    if (!['pending', 'approved', 'rejected'].includes(status)) {
-      return res.status(400).json({ message: 'Invalid status' });
-    }
-
-    const feedback = await Feedback.findById(req.params.id);
-
-    if (!feedback) {
-      return res.status(404).json({ message: 'Feedback not found' });
-    }
-
-    feedback.status = status;
-    const updatedFeedback = await feedback.save();
-
-    // Approving/rejecting changes which reviews count toward the average.
-    if (feedback.product != null) {
-      await recomputeProductRating(feedback.product);
-    }
-
-    res.json(updatedFeedback);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// @desc    Delete feedback
-// @route   DELETE /api/feedbacks/:id
-// @access  Private/Admin
-router.delete('/:id', protect, admin, async (req, res, next) => {
-  try {
-    const feedback = await Feedback.findById(req.params.id);
-
-    if (!feedback) {
-      return res.status(404).json({ message: 'Feedback not found' });
-    }
-
-    const productId = feedback.product;
-
-    await feedback.deleteOne();
-
-    // Recompute the product's rating so it reflects the remaining reviews.
-    if (productId != null) {
-      await recomputeProductRating(productId);
-    }
-
-    res.json({ message: 'Feedback removed successfully' });
   } catch (error) {
     next(error);
   }

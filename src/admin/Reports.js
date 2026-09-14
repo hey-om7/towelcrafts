@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FaDownload, FaPrint, FaRupeeSign, FaShoppingCart, FaUserPlus, FaWallet } from "react-icons/fa";
-import { API_URL } from "../config";
+import { ADMIN_API, isAuthError } from "../config";
 
 const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN");
 
@@ -24,7 +24,8 @@ export default function Reports() {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_URL}/api/stats/monthly?month=${month}`, { headers: authHeaders() });
+      const res = await fetch(`${ADMIN_API}/stats/monthly?month=${month}`, { headers: authHeaders() });
+      if (isAuthError(res)) throw new Error("You don't have permission to view reports.");
       if (!res.ok) throw new Error(`Failed to load report (${res.status})`);
       setData(await res.json());
     } catch (err) {

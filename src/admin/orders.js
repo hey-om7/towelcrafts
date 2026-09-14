@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FaFileInvoice, FaEye, FaTimes, FaEnvelope, FaCheck } from "react-icons/fa";
-import { API_URL } from "../config";
+import { ADMIN_API, isAuthError } from "../config";
 import { printInvoice } from "./invoice";
 
 const ORDER_STATUSES = ["placed", "confirmed", "processing", "shipped", "delivered", "cancelled", "returned"];
@@ -43,7 +43,8 @@ export default function Orders() {
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/orders?limit=200`, { headers: authHeaders() });
+      const res = await fetch(`${ADMIN_API}/orders?limit=200`, { headers: authHeaders() });
+      if (isAuthError(res)) throw new Error("You don't have permission to view orders.");
       if (!res.ok) throw new Error(`Failed to fetch orders (${res.status})`);
       const data = await res.json();
       setOrders(data.orders || data);
@@ -65,7 +66,7 @@ export default function Orders() {
 
   // Persist a status/detail change. Returns the updated order (or null on error).
   const saveOrder = useCallback(async (id, patch) => {
-    const res = await fetch(`${API_URL}/api/orders/${id}/status`, {
+    const res = await fetch(`${ADMIN_API}/orders/${id}/status`, {
       method: "PUT",
       headers: authHeaders(),
       body: JSON.stringify(patch),

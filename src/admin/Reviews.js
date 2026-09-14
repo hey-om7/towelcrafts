@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { FaStar, FaTrashAlt } from "react-icons/fa";
-import { API_URL } from "../config";
+import { ADMIN_API, isAuthError } from "../config";
 
 export default function Reviews() {
   const [items, setItems] = useState([]);
@@ -14,7 +14,8 @@ export default function Reviews() {
 
   const load = useCallback(async () => {
     try {
-      const res = await fetch(`${API_URL}/api/feedbacks?limit=200`, { headers: authHeaders() });
+      const res = await fetch(`${ADMIN_API}/feedbacks?limit=200`, { headers: authHeaders() });
+      if (isAuthError(res)) throw new Error("You don't have permission to view reviews.");
       if (!res.ok) throw new Error(`Failed to load reviews (${res.status})`);
       const data = await res.json();
       const all = data.feedbacks || data;
@@ -29,14 +30,14 @@ export default function Reviews() {
   useEffect(() => { load(); }, [load]);
 
   const setStatus = async (id, status) => {
-    const res = await fetch(`${API_URL}/api/feedbacks/${id}/status`, {
+    const res = await fetch(`${ADMIN_API}/feedbacks/${id}/status`, {
       method: "PUT", headers: authHeaders(), body: JSON.stringify({ status }),
     });
     if (res.ok) setItems((prev) => prev.map((f) => (f._id === id ? { ...f, status } : f)));
   };
 
   const remove = async (id) => {
-    const res = await fetch(`${API_URL}/api/feedbacks/${id}`, { method: "DELETE", headers: authHeaders() });
+    const res = await fetch(`${ADMIN_API}/feedbacks/${id}`, { method: "DELETE", headers: authHeaders() });
     if (res.ok) setItems((prev) => prev.filter((f) => f._id !== id));
   };
 

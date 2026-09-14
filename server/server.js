@@ -133,13 +133,15 @@ app.use('/api/users/google', authLimiter);
 // ─────────────────────────────────────────────
 // Routes
 // ─────────────────────────────────────────────
+// Public + customer-facing API
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/orders', require('./routes/orderRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/feedbacks', require('./routes/feedbackRoutes'));
-app.use('/api/stats', require('./routes/statsRoutes'));
-app.use('/api/uploads', require('./routes/uploadRoutes'));
+
+// Admin API — fully separated namespace, admin-only on every route (incl. GET).
+app.use('/api/admin', require('./routes/admin'));
 
 // Health checks
 app.get('/', (req, res) => {

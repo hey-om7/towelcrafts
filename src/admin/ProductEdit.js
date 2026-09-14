@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { categories as fallbackCategories } from "../user/data";
-import { API_URL } from "../config";
+import { API_URL, ADMIN_API } from "../config";
 import { ImageUploader } from "./ImageUploader";
 
 export function ProductEdit({ product, onCancel }) {
@@ -74,8 +74,8 @@ export function ProductEdit({ product, onCancel }) {
       };
 
       const url = isNew
-        ? `${API_URL}/api/products`
-        : `${API_URL}/api/products/${existing._id}`;
+        ? `${ADMIN_API}/products`
+        : `${ADMIN_API}/products/${existing._id}`;
       const method = isNew ? "POST" : "PUT";
 
       const response = await fetch(url, {
