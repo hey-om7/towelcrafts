@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   FaBox, FaShoppingCart, FaSignOutAlt, FaArrowLeft,
   FaChartPie, FaTags, FaUsers, FaStar, FaLifeRing, FaFileAlt, FaWallet, FaBars, FaTimes, FaTicketAlt,
@@ -33,7 +33,12 @@ const TABS = [
 const GROUPS = ["Analyse", "Sell", "Catalog", "People"];
 
 export function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Derive the active tab from the URL so a refresh (or a shared link) keeps
+  // the admin on the same section. Falls back to "overview" for an unknown or
+  // missing tab.
+  const tabParam = searchParams.get("tab");
+  const activeTab = TABS.some((t) => t.id === tabParam) ? tabParam : "overview";
   const [editingProduct, setEditingProduct] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const navigate = useNavigate();
@@ -94,7 +99,9 @@ export function AdminDashboard() {
   }
 
   const handleTabChange = (tab) => {
-    setActiveTab(tab);
+    // Persist the tab in the URL (?tab=…) so it survives a refresh; keep the
+    // URL clean for the default Overview tab.
+    setSearchParams(tab === "overview" ? {} : { tab }, { replace: true });
     setEditingProduct(null);
     setDrawerOpen(false);
   };
