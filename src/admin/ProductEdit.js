@@ -43,6 +43,7 @@ export function ProductEdit({ product, onCancel }) {
     color: existing.color || "",
     stockQuantity: existing.stockQuantity ?? 100,
     featured: existing.featured || false,
+    visible: existing.visible !== false,
   });
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -227,6 +228,19 @@ export function ProductEdit({ product, onCancel }) {
         <div className="admin__form-group">
           <label className="admin__form-label">Stock Quantity</label>
           <input type="number" name="stockQuantity" className="admin__form-input" value={form.stockQuantity} onChange={handleChange} />
+        </div>
+
+        <div className="admin__form-group">
+          <label className="admin__form-label">Visibility</label>
+          <select
+            name="visible"
+            className="admin__form-select"
+            value={form.visible ? "visible" : "hidden"}
+            onChange={(e) => setForm((f) => ({ ...f, visible: e.target.value === "visible" }))}
+          >
+            <option value="visible">Visible — shown to customers</option>
+            <option value="hidden">Hidden — not shown anywhere</option>
+          </select>
         </div>
 
         <div className="admin__form-group" style={{ justifyContent: "flex-end" }}>

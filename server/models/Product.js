@@ -83,6 +83,13 @@ const productSchema = mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    // Storefront visibility. When false, the product is hidden from all
+    // customer-facing views (listings, search, featured, detail page) but
+    // remains fully visible and editable in the admin panel.
+    visible: {
+      type: Boolean,
+      default: true,
+    },
     stockQuantity: {
       type: Number,
       default: 100,
@@ -119,6 +126,7 @@ productSchema.index({ categoryId: 1 });
 productSchema.index({ price: 1 });
 productSchema.index({ featured: 1 });
 productSchema.index({ inStock: 1 });
+productSchema.index({ visible: 1 });
 productSchema.index({ slug: 1 });
 productSchema.index({ title: 'text', description: 'text' });
 

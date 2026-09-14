@@ -26,6 +26,10 @@ router.get('/', async (req, res, next) => {
 
     const filter = {};
 
+    // Never expose hidden products on the storefront. `$ne: false` also
+    // includes legacy documents that predate the `visible` field.
+    filter.visible = { $ne: false };
+
     if (categoryId) filter.categoryId = Number(categoryId);
     if (category) filter.category = { $regex: category, $options: 'i' };
     if (featured === 'true') filter.featured = true;
@@ -72,7 +76,7 @@ router.get('/', async (req, res, next) => {
 // @access  Public
 router.get('/featured', async (req, res, next) => {
   try {
-    const products = await Product.find({ featured: true, inStock: true })
+    const products = await Product.find({ featured: true, inStock: true, visible: { $ne: false } })
       .sort({ rating: -1 })
       .limit(8);
     res.json(products);
@@ -87,7 +91,7 @@ router.get('/featured', async (req, res, next) => {
 router.get('/:id', async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
-    if (product) {
+    if (product && product.visible !== false) {
       res.json(product);
     } else {
       res.status(404).json({ message: 'Product not found' });

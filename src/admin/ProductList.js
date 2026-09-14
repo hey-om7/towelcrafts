@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { FaPlus, FaTrash, FaEdit } from "react-icons/fa";
-import { API_URL, ADMIN_API, imageUrl } from "../config";
+import { FaPlus, FaTrash, FaEdit, FaEye, FaEyeSlash } from "react-icons/fa";
+import { ADMIN_API, imageUrl } from "../config";
 
 export function ProductList({ onEdit }) {
   const [products, setProducts] = useState([]);
@@ -9,7 +9,10 @@ export function ProductList({ onEdit }) {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch(`${API_URL}/api/products?limit=200`);
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const response = await fetch(`${ADMIN_API}/products`, {
+        headers: { Authorization: `Bearer ${userInfo.token}` },
+      });
       const data = await response.json();
       setProducts(data.products || data);
     } catch (err) {
@@ -39,6 +42,31 @@ export function ProductList({ onEdit }) {
       }
     } catch (err) {
       console.error("Error deleting product:", err);
+    }
+  };
+
+  const handleToggleVisibility = async (product) => {
+    const nextVisible = product.visible === false; // if currently hidden -> make visible
+    try {
+      const userInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const res = await fetch(`${ADMIN_API}/products/${product._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${userInfo.token}`,
+        },
+        body: JSON.stringify({ visible: nextVisible }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setProducts((prev) =>
+          prev.map((p) => (p._id === updated._id ? { ...p, visible: updated.visible } : p))
+        );
+      } else {
+        alert("Failed to update visibility");
+      }
+    } catch (err) {
+      console.error("Error updating visibility:", err);
     }
   };
 
@@ -73,6 +101,10 @@ export function ProductList({ onEdit }) {
             <span className="admin__stat-label">Featured</span>
             <div className="admin__stat-value">{products.filter((p) => p.featured).length}</div>
           </div>
+          <div className="admin__stat">
+            <span className="admin__stat-label">Hidden</span>
+            <div className="admin__stat-value">{products.filter((p) => p.visible === false).length}</div>
+          </div>
         </div>
       </div>
 
@@ -91,6 +123,7 @@ export function ProductList({ onEdit }) {
               <th>Category</th>
               <th>Price</th>
               <th>Stock</th>
+              <th>Visibility</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -110,6 +143,21 @@ export function ProductList({ onEdit }) {
                   <span className={`admin__badge ${product.inStock ? "admin__badge--delivered" : "admin__badge--cancelled"}`}>
                     {product.inStock ? `${product.stockQuantity ?? "In stock"}` : "Out of stock"}
                   </span>
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className={`admin__visibility-toggle ${product.visible === false ? "is-hidden" : "is-visible"}`}
+                    onClick={() => handleToggleVisibility(product)}
+                    aria-pressed={product.visible !== false}
+                    title={product.visible === false ? "Hidden from customers — click to show" : "Visible to customers — click to hide"}
+                  >
+                    {product.visible === false ? (
+                      <><FaEyeSlash aria-hidden="true" /> Hidden</>
+                    ) : (
+                      <><FaEye aria-hidden="true" /> Visible</>
+                    )}
+                  </button>
                 </td>
                 <td>
                   <div style={{ display: "flex", gap: "var(--space-2)" }}>

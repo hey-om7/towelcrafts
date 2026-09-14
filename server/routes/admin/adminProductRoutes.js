@@ -6,6 +6,17 @@ const express = require('express');
 const router = express.Router();
 const Product = require('../../models/Product');
 
+// @desc    List all products (admin view — includes hidden/invisible ones)
+// @route   GET /api/admin/products
+router.get('/', async (req, res, next) => {
+  try {
+    const products = await Product.find({}).sort({ createdAt: -1 });
+    res.json({ products, total: products.length });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // @desc    Create a product
 // @route   POST /api/admin/products
 router.post('/', async (req, res, next) => {
@@ -29,6 +40,7 @@ router.post('/', async (req, res, next) => {
       stockQuantity,
       featured,
       tags,
+      visible,
     } = req.body;
 
     if (!id || !title || !price || !description || !categoryId || !image) {
@@ -61,6 +73,7 @@ router.post('/', async (req, res, next) => {
       stockQuantity,
       featured,
       tags,
+      visible,
     });
 
     res.status(201).json(product);
@@ -83,7 +96,7 @@ router.put('/:id', async (req, res, next) => {
       'title', 'price', 'originalPrice', 'image', 'imageSizes', 'images', 'category',
       'description', 'shortDescription', 'categoryId', 'material',
       'weight', 'dimensions', 'color', 'inStock', 'stockQuantity',
-      'featured', 'tags',
+      'featured', 'tags', 'visible',
     ];
 
     allowedFields.forEach((field) => {

@@ -59,7 +59,7 @@ router.post('/', protect, async (req, res, next) => {
     let subtotal = 0;
     for (const line of requestedLines) {
       const product = productMap.get(String(line.productId));
-      if (!product) {
+      if (!product || product.visible === false) {
         return res.status(404).json({ message: `Product not found (${line.productId})` });
       }
       const totalWanted = perProductQty.get(String(product._id));
