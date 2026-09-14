@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { FaArrowRight } from 'react-icons/fa';
 import { categories as fallbackCategories } from './data';
-import { API_URL, imageUrlSized } from '../config';
+import { API_URL, imageUrlSized, imageSrcSet } from '../config';
 import './categories_page.css';
 
 export function CategoriesPage() {
@@ -58,7 +58,13 @@ export function CategoriesPage() {
               style={{ animationDelay: `${index * 0.1}s` }}
             >
               <div className="cat-card__image">
-                <img src={imageUrlSized(category, 'medium')} alt={category.title} loading="lazy" />
+                <img
+                  src={imageUrlSized(category, 'large')}
+                  srcSet={imageSrcSet(category) || undefined}
+                  sizes="(max-width: 900px) 92vw, (min-width: 901px) 620px"
+                  alt={category.title}
+                  loading="lazy"
+                />
                 <div className="cat-card__overlay">
                   <span className="cat-card__cta">
                     Explore

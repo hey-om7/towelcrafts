@@ -76,3 +76,37 @@ export function imageUrlSized(item, size = 'medium') {
   }
   return imageUrl(item.image || '');
 }
+
+// Pixel widths for the responsive variants, mirroring the server's IMAGE_SIZES.
+// `original` is omitted here since its width is unknown to the client.
+const SIZE_WIDTHS = {
+  icon: 64,
+  thumb: 160,
+  small: 320,
+  medium: 640,
+  large: 1280,
+};
+
+/**
+ * Build a width-descriptor `srcset` from an item's `imageSizes` map so the
+ * browser can pick the sharpest variant for the element's rendered size and
+ * device pixel ratio. Returns '' when no size map is available (callers should
+ * fall back to a plain `src` via imageUrlSized).
+ *
+ * @param {Object|string} item
+ * @param {string[]} [names]  which variants to include (default small→large)
+ * @returns {string} e.g. "https://…/320.webp 320w, https://…/640.webp 640w"
+ */
+export function imageSrcSet(item, names = ['small', 'medium', 'large']) {
+  if (!item || typeof item !== 'object') return '';
+  const sizes = item.imageSizes;
+  if (!sizes || typeof sizes !== 'object') return '';
+
+  const parts = [];
+  for (const name of names) {
+    const url = sizes[name];
+    const width = SIZE_WIDTHS[name];
+    if (url && width) parts.push(`${imageUrl(url)} ${width}w`);
+  }
+  return parts.join(', ');
+}

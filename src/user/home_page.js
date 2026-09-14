@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { FaInstagram, FaTwitter, FaLinkedin, FaArrowRight } from "react-icons/fa";
 import { categories as fallbackCategories } from "./data";
 import { useScrollReveal } from "./useScrollReveal";
-import { API_URL, imageUrlSized } from "../config";
+import { API_URL, imageUrlSized, imageSrcSet } from "../config";
 import "./home_page.css";
 
 const VALUES = [
@@ -181,6 +181,8 @@ export function HomePage() {
               <div className="collections__feature-media">
                 <img
                   src={imageUrlSized(featured, "large")}
+                  srcSet={imageSrcSet(featured, ["medium", "large"]) || undefined}
+                  sizes="(max-width: 900px) 92vw, 720px"
                   alt={featured.title}
                   loading="lazy"
                 />
