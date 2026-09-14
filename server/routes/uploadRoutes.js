@@ -30,10 +30,10 @@ router.get('/status', protect, admin, (req, res) => {
   res.json({ enabled: r2.isConfigured() });
 });
 
-// @desc    Upload a single image to Cloudflare R2.
+// @desc    Upload a single image to Cloudflare R2, generating responsive sizes.
 // @route   POST /api/uploads   (multipart/form-data, field name: "file")
 // @access  Private/Admin
-// @returns { url, key }
+// @returns { url, key, sizes: { icon, thumb, small, medium, large, original } }
 router.post('/', protect, admin, (req, res) => {
   upload.single('file')(req, res, async (err) => {
     if (err) {
@@ -51,13 +51,13 @@ router.post('/', protect, admin, (req, res) => {
 
     try {
       const folder = /^[a-z0-9/_-]+$/i.test(req.body.folder || '') ? req.body.folder : 'products';
-      const { url, key } = await r2.uploadBuffer({
+      const { url, key, sizes } = await r2.uploadImageVariants({
         buffer: req.file.buffer,
         contentType: req.file.mimetype,
         originalName: req.file.originalname,
         folder,
       });
-      res.status(201).json({ url, key });
+      res.status(201).json({ url, key, sizes });
     } catch (e) {
       console.error('[uploads] R2 upload failed:', e.message);
       res.status(502).json({ message: 'Failed to store image. Please try again.' });
@@ -104,13 +104,20 @@ router.post('/multiple', protect, admin, (req, res) => {
   });
 });
 
-// @desc    Delete an image from R2 by key or full public URL.
-// @route   DELETE /api/uploads   { value }
+// @desc    Delete an image from R2 by key, full public URL, or a sizes map.
+//          Pass `value` for a single object, or `sizes` (object of URLs) to
+//          remove every generated variant of one upload at once.
+// @route   DELETE /api/uploads   { value } | { sizes }
 // @access  Private/Admin
 router.delete('/', protect, admin, async (req, res) => {
+  const sizes = req.body.sizes;
   const value = req.body.value || req.query.value;
-  if (!value) return res.status(400).json({ message: 'No image value provided' });
+  if (!value && !sizes) return res.status(400).json({ message: 'No image value provided' });
   try {
+    if (sizes && typeof sizes === 'object') {
+      const deleted = await r2.deleteVariants(sizes);
+      return res.json({ deleted });
+    }
     const deleted = await r2.deleteByUrlOrKey(value);
     res.json({ deleted });
   } catch (e) {

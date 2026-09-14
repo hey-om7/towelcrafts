@@ -54,7 +54,7 @@ router.get('/:id', async (req, res, next) => {
 // @access  Private/Admin
 router.post('/', protect, admin, async (req, res, next) => {
   try {
-    const { id, title, subtitle, description, image, displayOrder, active } = req.body;
+    const { id, title, subtitle, description, image, imageSizes, displayOrder, active } = req.body;
 
     if (!id || !title || !image) {
       return res.status(400).json({ message: 'Category ID, title, and image are required' });
@@ -71,6 +71,7 @@ router.post('/', protect, admin, async (req, res, next) => {
       subtitle,
       description,
       image,
+      imageSizes,
       displayOrder: displayOrder || 0,
       active: active !== undefined ? active : true,
     });
@@ -91,7 +92,7 @@ router.put('/:id', protect, admin, async (req, res, next) => {
       return res.status(404).json({ message: 'Category not found' });
     }
 
-    const fields = ['title', 'subtitle', 'description', 'image', 'displayOrder', 'active'];
+    const fields = ['title', 'subtitle', 'description', 'image', 'imageSizes', 'displayOrder', 'active'];
     fields.forEach((f) => {
       if (req.body[f] !== undefined) category[f] = req.body[f];
     });

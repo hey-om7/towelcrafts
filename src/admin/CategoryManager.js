@@ -13,6 +13,7 @@ function CategoryForm({ category, onCancel, onSaved }) {
     subtitle: existing.subtitle || "",
     description: existing.description || "",
     image: existing.image || "",
+    imageSizes: existing.imageSizes || null,
     displayOrder: existing.displayOrder ?? 0,
     active: existing.active !== undefined ? existing.active : true,
   });
@@ -81,6 +82,7 @@ function CategoryForm({ category, onCancel, onSaved }) {
             folder="categories"
             value={form.image}
             onChange={(url) => setForm((f) => ({ ...f, image: url }))}
+            onSizes={(sizes) => setForm((f) => ({ ...f, imageSizes: sizes }))}
           />
         </div>
         <div className="admin__form-group admin__form-group--full">

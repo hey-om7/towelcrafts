@@ -31,6 +31,17 @@ const categorySchema = mongoose.Schema(
       type: String,
       required: [true, 'Category image is required'],
     },
+    // Responsive size variants of `image`, generated on upload. `image` stays
+    // the default display URL (medium); consumers may pick icon/thumb for
+    // small tiles and fast-loading spots.
+    imageSizes: {
+      icon: String,
+      thumb: String,
+      small: String,
+      medium: String,
+      large: String,
+      original: String,
+    },
     displayOrder: {
       type: Number,
       default: 0,

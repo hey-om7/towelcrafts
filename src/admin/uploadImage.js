@@ -14,7 +14,9 @@ function authToken() {
  *
  * @param {File} file
  * @param {string} [folder]  logical prefix, e.g. "products" | "categories"
- * @returns {Promise<{ url: string, key: string }>}
+ * @returns {Promise<{ url: string, key: string, sizes?: Record<string,string> }>}
+ *          `sizes` maps size names (icon, thumb, small, medium, large, original)
+ *          to their public URLs when the server generated responsive variants.
  */
 export async function uploadImage(file, folder = "products") {
   const fd = new FormData();

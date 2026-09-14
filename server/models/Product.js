@@ -47,6 +47,17 @@ const productSchema = mongoose.Schema(
       type: String,
       required: [true, 'Product image is required'],
     },
+    // Responsive size variants of `image`, generated on upload. `image` stays
+    // the default display URL (medium) for backward compatibility; consumers
+    // may pick a smaller variant (icon/thumb) for faster loads.
+    imageSizes: {
+      icon: String,
+      thumb: String,
+      small: String,
+      medium: String,
+      large: String,
+      original: String,
+    },
     images: [
       {
         type: String,

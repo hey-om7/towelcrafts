@@ -32,6 +32,7 @@ export function ProductEdit({ product, onCancel }) {
     price: existing.price || "",
     originalPrice: existing.originalPrice || "",
     image: existing.image || "",
+    imageSizes: existing.imageSizes || null,
     description: existing.description || "",
     shortDescription: existing.shortDescription || "",
     categoryId: existing.categoryId || 1,
@@ -176,6 +177,7 @@ export function ProductEdit({ product, onCancel }) {
             onChange={(url) => {
               setForm((f) => ({ ...f, image: url }));
             }}
+            onSizes={(sizes) => setForm((f) => ({ ...f, imageSizes: sizes }))}
           />
         </div>
 

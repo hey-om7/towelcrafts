@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { FaArrowLeft, FaStar, FaShieldAlt, FaTruck, FaUndo, FaChevronLeft, FaChevronRight, FaShoppingBag, FaCheck } from "react-icons/fa";
-import { API_URL, imageUrl } from "../config";
+import { API_URL, imageUrl, imageUrlSized } from "../config";
 import ProductReviews from "./ProductReviews";
 import { useCart } from "./CartContext";
 import "./product_detail.css";
@@ -106,7 +106,11 @@ function ProductDetail() {
         <div className="pd-gallery">
           <div className="pd-gallery__main">
             <img
-              src={imageUrl(images[currentImage])}
+              src={
+                images[currentImage] === product.image
+                  ? imageUrlSized(product, "large")
+                  : imageUrl(images[currentImage])
+              }
               alt={product.title}
               className="pd-gallery__image"
             />
@@ -133,7 +137,10 @@ function ProductDetail() {
                   onClick={() => setCurrentImage(i)}
                   aria-label={`View image ${i + 1}`}
                 >
-                  <img src={imageUrl(img)} alt="" />
+                  <img
+                    src={img === product.image ? imageUrlSized(product, "thumb") : imageUrl(img)}
+                    alt=""
+                  />
                 </button>
               ))}
             </div>

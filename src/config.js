@@ -39,3 +39,40 @@ export function imageUrl(value) {
   // Bare object key
   return IMAGE_BASE_URL ? `${IMAGE_BASE_URL}/${v}` : `/${v}`;
 }
+
+// Preferred → smaller fallback order, so a missing exact size degrades to the
+// nearest sensible variant rather than to nothing.
+const SIZE_FALLBACK = {
+  icon: ['icon', 'thumb', 'small', 'medium', 'large', 'original'],
+  thumb: ['thumb', 'small', 'icon', 'medium', 'large', 'original'],
+  small: ['small', 'medium', 'thumb', 'large', 'original'],
+  medium: ['medium', 'large', 'small', 'original'],
+  large: ['large', 'original', 'medium'],
+  original: ['original', 'large', 'medium'],
+};
+
+/**
+ * Resolve the best <img src> for an item at a requested responsive size.
+ *
+ * Reads the item's `imageSizes` map (produced on upload) and picks the
+ * requested `size`, degrading through a sensible fallback chain, then finally
+ * to the legacy single `image` string. Accepts either an item object
+ * ({ image, imageSizes }) or a plain string (treated as the only source).
+ *
+ * @param {Object|string} item  product/category object, or a raw image value
+ * @param {('icon'|'thumb'|'small'|'medium'|'large'|'original')} [size='medium']
+ * @returns {string} usable <img src>, or '' when nothing is available
+ */
+export function imageUrlSized(item, size = 'medium') {
+  if (!item) return '';
+  if (typeof item === 'string') return imageUrl(item);
+
+  const sizes = item.imageSizes;
+  if (sizes && typeof sizes === 'object') {
+    const chain = SIZE_FALLBACK[size] || SIZE_FALLBACK.medium;
+    for (const name of chain) {
+      if (sizes[name]) return imageUrl(sizes[name]);
+    }
+  }
+  return imageUrl(item.image || '');
+}

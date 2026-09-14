@@ -10,14 +10,20 @@ import { uploadImage, uploadsEnabled } from "./uploadImage";
  * `onChange(newValue)`. The value is whatever should be persisted — a full R2
  * URL after upload, or a manually entered URL/path.
  *
+ * When the server generates responsive size variants, they are reported via
+ * the optional `onSizes(sizesObjectOrNull)` callback so the parent can persist
+ * an `imageSizes` map alongside the primary `image` string. Manual URL entry
+ * and removal clear sizes (call `onSizes(null)`).
+ *
  * @param {Object}   props
  * @param {string}   props.value
  * @param {Function} props.onChange
+ * @param {Function} [props.onSizes]  receives the { icon, thumb, ... } map or null
  * @param {string}   [props.folder]   R2 folder prefix (default "products")
  * @param {string}   [props.label]    field label
  * @param {boolean}  [props.required]
  */
-export function ImageUploader({ value, onChange, folder = "products", label = "Image", required = false }) {
+export function ImageUploader({ value, onChange, onSizes, folder = "products", label = "Image", required = false }) {
   const [enabled, setEnabled] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
@@ -45,9 +51,10 @@ export function ImageUploader({ value, onChange, folder = "products", label = "I
     setError(null);
     setUploading(true);
     try {
-      const { url } = await uploadImage(file, folder);
+      const { url, sizes } = await uploadImage(file, folder);
       setLoadFailed(false);
       onChange(url);
+      if (onSizes) onSizes(sizes || null);
     } catch (e) {
       setError(e.message || "Upload failed");
     } finally {
@@ -133,6 +140,7 @@ export function ImageUploader({ value, onChange, folder = "products", label = "I
           onChange={(e) => {
             setLoadFailed(false);
             onChange(e.target.value);
+            if (onSizes) onSizes(null);
           }}
           placeholder="https://cdn.example.com/image.webp or /image.png"
         />
@@ -154,6 +162,7 @@ export function ImageUploader({ value, onChange, folder = "products", label = "I
               onClick={() => {
                 setLoadFailed(false);
                 onChange("");
+                if (onSizes) onSizes(null);
               }}
             >
               <FaTimes /> Remove

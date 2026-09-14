@@ -105,6 +105,7 @@ router.post('/', protect, admin, async (req, res, next) => {
       price,
       originalPrice,
       image,
+      imageSizes,
       images,
       category,
       description,
@@ -136,6 +137,7 @@ router.post('/', protect, admin, async (req, res, next) => {
       price,
       originalPrice,
       image,
+      imageSizes,
       images,
       category,
       description,
@@ -168,7 +170,7 @@ router.put('/:id', protect, admin, async (req, res, next) => {
     }
 
     const allowedFields = [
-      'title', 'price', 'originalPrice', 'image', 'images', 'category',
+      'title', 'price', 'originalPrice', 'image', 'imageSizes', 'images', 'category',
       'description', 'shortDescription', 'categoryId', 'material',
       'weight', 'dimensions', 'color', 'inStock', 'stockQuantity',
       'featured', 'tags',
