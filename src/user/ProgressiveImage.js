@@ -5,10 +5,13 @@ import "./ProgressiveImage.css";
 /**
  * Blur-up (LQIP) image loader.
  *
- * Immediately paints a tiny, blurred placeholder variant (thumb → icon) while
- * the full-quality image downloads, then cross-fades to the sharp image once it
- * has loaded. Works with the responsive `imageSizes` map produced on upload and
- * degrades gracefully when only a single `image` string is available.
+ * Immediately paints a tiny, blurred placeholder variant (thumb → icon) as a
+ * solid backdrop. The full-quality image is layered on top, painted opaque at
+ * the same blur as the placeholder, so when it swaps in it looks identical to
+ * what's already on screen — it then simply de-blurs into focus (no opacity
+ * fade, so the reveal continues seamlessly from the blurred state). Works with
+ * the responsive `imageSizes` map produced on upload and degrades gracefully
+ * when only a single `image` string is available.
  *
  * The component fills its parent, so wrap it in an element that owns the
  * aspect-ratio / border-radius / overflow (the existing card image containers
@@ -34,7 +37,6 @@ export function ProgressiveImage({
   className = "",
 }) {
   const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
   const imgRef = useRef(null);
 
   const full = imageUrlSized(item, size);
@@ -63,7 +65,7 @@ export function ProgressiveImage({
     <div className={`pimg ${className}`.trim()}>
       {hasLqip && (
         <img
-          className={`pimg__lqip${loaded && !errored ? " pimg__lqip--hidden" : ""}`}
+          className="pimg__lqip"
           src={imageUrl(lqip)}
           alt=""
           aria-hidden="true"
@@ -72,7 +74,7 @@ export function ProgressiveImage({
       )}
       <img
         ref={imgRef}
-        className={`pimg__full${loaded && !errored ? " pimg__full--loaded" : ""}`}
+        className={`pimg__full${loaded ? " pimg__full--loaded" : ""}`}
         src={full}
         srcSet={srcSet || undefined}
         sizes={srcSet && sizes ? sizes : undefined}
@@ -80,7 +82,6 @@ export function ProgressiveImage({
         loading={loading}
         decoding="async"
         onLoad={() => setLoaded(true)}
-        onError={() => setErrored(true)}
       />
     </div>
   );

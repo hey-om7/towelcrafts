@@ -1,6 +1,12 @@
 /* Blur-up progressive image
    The wrapper fills its parent (which owns aspect-ratio / radius / overflow).
-   Two stacked layers: a blurred low-quality placeholder and the full image. */
+   Two stacked layers: a blurred low-quality placeholder that stays underneath
+   as a solid backdrop, and the full image on top. The full image is painted
+   FULLY OPAQUE from the first frame at the same blur/scale as the placeholder,
+   so the moment it swaps in it looks identical to what is already on screen —
+   then it only de-blurs into focus. There is no opacity fade, so the reveal
+   continues seamlessly from the blurred state instead of restarting from
+   transparent. */
 
 .pimg {
   position: absolute;
@@ -23,34 +29,43 @@
   object-fit: cover;
 }
 
-/* Low-quality placeholder: blurred, slightly upscaled so the blur doesn't
-   reveal transparent edges. Fades out once the full image is ready. */
+/* Low-quality placeholder: blurred and slightly upscaled so the blur doesn't
+   reveal transparent edges. Stays put as a solid backdrop beneath the sharp
+   image — it never needs to fade because the opaque sharp image fully covers
+   it once loaded. */
 .pimg__lqip {
-  filter: blur(14px);
-  transform: scale(1.08);
+  filter: blur(20px);
+  transform: scale(1.1);
   opacity: 1;
-  transition: opacity 0.5s var(--ease-out, ease-out);
-  will-change: opacity;
 }
 
-.pimg__lqip--hidden {
-  opacity: 0;
-}
-
-/* Full image: starts transparent, fades in on load. */
-.pimg__full {
-  opacity: 0;
-  transition: opacity 0.5s var(--ease-out, ease-out);
-  will-change: opacity;
-}
-
-.pimg__full--loaded {
+/* Full image: opaque immediately, starting at the SAME blur/scale as the
+   placeholder so the hand-off is invisible, then transitions only its blur and
+   scale down to sharp. Scoped with `.pimg` for specificity so a parent's
+   `.card img { transition }` rule can't override the focus transition. */
+.pimg .pimg__full {
   opacity: 1;
+  filter: blur(20px);
+  transform: scale(1.1);
+  transition:
+    filter 0.8s var(--ease-out, ease-out),
+    transform 0.8s var(--ease-out, ease-out);
+  will-change: filter, transform;
+}
+
+.pimg .pimg__full--loaded {
+  filter: blur(0);
+  transform: scale(1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pimg__lqip,
-  .pimg__full {
+  .pimg .pimg__full {
+    filter: none;
+    transform: none;
     transition: none;
+  }
+  .pimg .pimg__full--loaded {
+    filter: none;
+    transform: none;
   }
 }
